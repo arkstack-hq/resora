@@ -15,16 +15,21 @@ The format follows semantic versioning principles.
   - `withMeta()` typed fluent helper
   - deep metadata merge behavior preserving pagination/cursor defaults.
 - `withResponse()` outgoing transport hook for per-class final response mutation (headers, status, and body) before dispatch.
+- Data wrapping configuration via `responseStructure.wrap` (global and per-class override support).
+- Pagination output configuration:
+  - absolute pagination links via `baseUrl` + `pageName`
+  - configurable pagination extras via `paginatedExtras` (including `cursor`)
+  - configurable pagination key maps via `paginatedMeta`, `paginatedLinks`, and `cursorMeta`.
 
 ### Documentation
 
 - Added configuration docs for `preferredCase` and `responseStructure` with examples.
 - Added writing guide coverage for `withResponse()` and hook context (`withResponseContext`).
 - Added cross-links in resources and collections guides for case, envelope, metadata, and outgoing response customization.
+- Added configuration guide coverage for pagination URL generation and cursor metadata customization.
 
 ### Planned
 
-- Data wrapping configuration
 - Conditional attribute helpers
 - Plugin System for lifecycle extension without core modification
 

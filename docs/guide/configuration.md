@@ -268,6 +268,123 @@ export default defineConfig({
 - `resource`: original input resource
 - `meta`: resolved metadata (if any)
 
+### **`paginatedExtras`** - _`['meta', 'links']`_
+
+Controls which pagination/cursor blocks are attached at the response root.
+
+You can use:
+
+- an array of built-ins (`meta`, `links`, `cursor`)
+- or custom output keys via object syntax.
+
+#### Example (custom root keys)
+
+```ts
+export default defineConfig({
+  paginatedExtras: {
+    meta: 'meta',
+    links: 'navigation',
+    cursor: 'cursor_info',
+  },
+});
+```
+
+### **`baseUrl`** - _`https://localhost`_
+
+Base URL used to build absolute pagination link URLs.
+
+### **`pageName`** - _`page`_
+
+Query parameter used when generating pagination links.
+
+#### Example (link URL generation)
+
+```ts
+export default defineConfig({
+  baseUrl: 'https://api.example.com/v1',
+  pageName: 'p',
+});
+```
+
+With a resource pagination payload like:
+
+```json
+{
+  "pagination": {
+    "firstPage": 1,
+    "nextPage": 3,
+    "path": "/users"
+  }
+}
+```
+
+Generated links become:
+
+```json
+{
+  "links": {
+    "first": "https://api.example.com/v1/users?p=1",
+    "next": "https://api.example.com/v1/users?p=3"
+  }
+}
+```
+
+### **`paginatedMeta`** - _Default pagination field map_
+
+Renames metadata fields emitted for pagination info.
+
+Default source keys:
+
+- `to`
+- `from`
+- `links`
+- `path`
+- `total`
+- `per_page`
+- `last_page`
+- `current_page`
+
+### **`paginatedLinks`** - _Default link field map_
+
+Renames pagination link keys.
+
+Supported source keys:
+
+- `first`
+- `last`
+- `prev`
+- `next`
+
+### **`cursorMeta`** - _`{ previous: 'previous', next: 'next' }`_
+
+Renames cursor metadata keys.
+
+#### Example (cursor mapping)
+
+```ts
+export default defineConfig({
+  paginatedExtras: {
+    meta: 'meta',
+    cursor: 'cursor',
+  },
+  cursorMeta: {
+    previous: 'before',
+    next: 'after',
+  },
+});
+```
+
+Cursor output becomes:
+
+```json
+{
+  "cursor": {
+    "before": "cursor_prev",
+    "after": "cursor_next"
+  }
+}
+```
+
 ## When Configuration Is Useful
 
 Use configuration when:

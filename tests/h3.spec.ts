@@ -96,6 +96,7 @@ describe('H3 Requests', () => {
                 perPage: 10,
                 currentPage: 1,
                 lastPage: 10,
+                path: '/users',
             },
         }
 
@@ -109,13 +110,14 @@ describe('H3 Requests', () => {
         expect(jsonResponse).toEqual({
             data: resource.data,
             links: {
-                last: 10,
+                last: 'https://localhost/users?page=10',
             },
             meta: {
                 total: 100,
                 per_page: 10,
                 current_page: 1,
                 last_page: 10,
+                path: '/users',
             },
         })
     })
@@ -143,6 +145,7 @@ describe('H3 Requests', () => {
                 perPage: 10,
                 currentPage: 1,
                 lastPage: 1,
+                path: '/users',
             },
         }
 
@@ -156,13 +159,14 @@ describe('H3 Requests', () => {
         expect(jsonResponse).toEqual({
             data: [],
             links: {
-                last: 1,
+                last: 'https://localhost/users?page=1',
             },
             meta: {
                 total: 0,
                 per_page: 10,
                 current_page: 1,
                 last_page: 1,
+                path: '/users',
             },
         })
     })

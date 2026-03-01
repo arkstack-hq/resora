@@ -39,6 +39,7 @@ export default defineConfig({
           { text: 'Writing Resources', link: '/guide/writing-resources' },
           { text: 'Generating Resources', link: '/guide/generating-resources' },
           { text: 'Configuration', link: '/guide/configuration' },
+          { text: 'Pagination & Cursor Recipes', link: '/guide/pagination-cursor-recipes' },
         ]
       },
       {

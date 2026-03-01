@@ -93,3 +93,7 @@ You can attach custom metadata in two ways:
 - `withMeta()` for typed fluent metadata chaining in request handlers
 
 See details and merge behavior in [Writing Resources - Metadata APIs: with() vs withMeta()](./writing-resources.md#metadata-apis-with-vs-withmeta).
+
+## Pagination & Cursor Recipes
+
+For ready-to-copy configuration patterns, see [Pagination & Cursor Quick Recipes](./pagination-cursor-recipes.md).

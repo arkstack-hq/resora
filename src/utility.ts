@@ -15,6 +15,8 @@ let globalPaginatedLinks: Config['paginatedLinks'] = {
     prev: 'prev',
     next: 'next',
 }
+let globalBaseUrl: Config['baseUrl'] = 'https://localhost'
+let globalPageName: Config['pageName'] = 'page'
 let globalPaginatedMeta: Config['paginatedMeta'] = {
     to: 'to',
     from: 'from',
@@ -24,6 +26,10 @@ let globalPaginatedMeta: Config['paginatedMeta'] = {
     per_page: 'per_page',
     last_page: 'last_page',
     current_page: 'current_page',
+}
+let globalCursorMeta: Config['cursorMeta'] = {
+    previous: 'previous',
+    next: 'next',
 }
 
 /**
@@ -147,6 +153,34 @@ export const getGlobalPaginatedLinks = (): Config['paginatedLinks'] => {
 }
 
 /**
+ * Set global base URL used to compose absolute pagination links.
+ */
+export const setGlobalBaseUrl = (baseUrl: Config['baseUrl']): void => {
+    globalBaseUrl = baseUrl
+}
+
+/**
+ * Get global base URL used to compose absolute pagination links.
+ */
+export const getGlobalBaseUrl = (): Config['baseUrl'] => {
+    return globalBaseUrl
+}
+
+/**
+ * Set global query parameter name used for pagination links.
+ */
+export const setGlobalPageName = (pageName: Config['pageName']): void => {
+    globalPageName = pageName
+}
+
+/**
+ * Get global query parameter name used for pagination links.
+ */
+export const getGlobalPageName = (): Config['pageName'] => {
+    return globalPageName
+}
+
+/**
  * Set global pagination meta mapping.
  */
 export const setGlobalPaginatedMeta = (meta: Config['paginatedMeta']): void => {
@@ -164,27 +198,78 @@ export const getGlobalPaginatedMeta = (): Config['paginatedMeta'] => {
 }
 
 /**
+ * Set global cursor meta mapping.
+ */
+export const setGlobalCursorMeta = (meta: Config['cursorMeta']): void => {
+    globalCursorMeta = {
+        ...globalCursorMeta,
+        ...meta,
+    }
+}
+
+/**
+ * Get global cursor meta mapping.
+ */
+export const getGlobalCursorMeta = (): Config['cursorMeta'] => {
+    return globalCursorMeta
+}
+
+/**
  * Resolve the configured root keys for pagination extras.
  */
-export const getPaginationExtraKeys = (): { metaKey?: string; linksKey?: string } => {
+export const getPaginationExtraKeys = (): { metaKey?: string; linksKey?: string; cursorKey?: string } => {
     if (Array.isArray(globalPaginatedExtras)) {
         return {
             metaKey: globalPaginatedExtras.includes('meta') ? 'meta' : undefined,
             linksKey: globalPaginatedExtras.includes('links') ? 'links' : undefined,
+            cursorKey: globalPaginatedExtras.includes('cursor') ? 'cursor' : undefined,
         }
     }
 
     return {
         metaKey: globalPaginatedExtras.meta,
         linksKey: globalPaginatedExtras.links,
+        cursorKey: globalPaginatedExtras.cursor,
     }
+}
+
+const buildPageUrl = (
+    page: number | undefined,
+    pathName: string | undefined,
+): string | undefined => {
+    if (typeof page === 'undefined') {
+        return undefined
+    }
+
+    const rawPath = pathName || ''
+    const base = globalBaseUrl || ''
+
+    const isAbsolutePath = /^https?:\/\//i.test(rawPath)
+    const normalizedBase = base.replace(/\/$/, '')
+    const normalizedPath = rawPath.replace(/^\//, '')
+    const root = isAbsolutePath
+        ? rawPath
+        : normalizedBase
+            ? normalizedPath
+                ? `${normalizedBase}/${normalizedPath}`
+                : normalizedBase
+            : ''
+
+    if (!root) {
+        return undefined
+    }
+
+    const url = new URL(root)
+    url.searchParams.set(globalPageName || 'page', String(page))
+
+    return url.toString()
 }
 
 /**
  * Build configured pagination/cursor extras for the final response root.
  */
 export const buildPaginationExtras = (resource: any): Record<string, any> => {
-    const { metaKey, linksKey } = getPaginationExtraKeys()
+    const { metaKey, linksKey, cursorKey } = getPaginationExtraKeys()
     const extra: Record<string, any> = {}
 
     const pagination = resource?.pagination
@@ -215,10 +300,10 @@ export const buildPaginationExtras = (resource: any): Record<string, any> => {
         }
 
         const linksSource: Record<string, any> = {
-            first: pagination.firstPage,
-            last: pagination.lastPage,
-            prev: pagination.prevPage,
-            next: pagination.nextPage,
+            first: buildPageUrl(pagination.firstPage, pagination.path),
+            last: buildPageUrl(pagination.lastPage, pagination.path),
+            prev: buildPageUrl(pagination.prevPage, pagination.path),
+            next: buildPageUrl(pagination.nextPage, pagination.path),
         }
 
         for (const [sourceKey, outputKey] of Object.entries(globalPaginatedLinks)) {
@@ -232,13 +317,30 @@ export const buildPaginationExtras = (resource: any): Record<string, any> => {
     }
 
     if (cursor) {
-        metaBlock.cursor = cursor
+        const cursorBlock: Record<string, any> = {}
+        const cursorSource: Record<string, any> = {
+            previous: cursor.previous,
+            next: cursor.next,
+        }
+
+        for (const [sourceKey, outputKey] of Object.entries(globalCursorMeta)) {
+            if (!outputKey) continue
+
+            const value = cursorSource[sourceKey]
+            if (typeof value !== 'undefined') {
+                cursorBlock[outputKey] = value
+            }
+        }
+
+        if (cursorKey && Object.keys(cursorBlock).length > 0) {
+            extra[cursorKey] = cursorBlock
+        } else if (Object.keys(cursorBlock).length > 0) {
+            metaBlock.cursor = cursorBlock
+        }
     }
 
     if (metaKey && Object.keys(metaBlock).length > 0) {
         extra[metaKey] = metaBlock
-    } else if (!metaKey && cursor) {
-        extra.cursor = cursor
     }
 
     if (linksKey && Object.keys(linksBlock).length > 0) {
@@ -531,6 +633,8 @@ export const getDefaultConfig = (): Config => {
             rootKey: 'data',
         },
         paginatedExtras: ['meta', 'links'],
+        baseUrl: 'https://localhost',
+        pageName: 'page',
         paginatedLinks: {
             first: 'first',
             last: 'last',
@@ -546,6 +650,10 @@ export const getDefaultConfig = (): Config => {
             per_page: 'per_page',
             last_page: 'last_page',
             current_page: 'current_page',
+        },
+        cursorMeta: {
+            previous: 'previous',
+            next: 'next',
         },
         resourcesDir: 'src/resources',
         stubs: {

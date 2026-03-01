@@ -31,13 +31,15 @@ export type ResponseFactory = (payload: any, context: ResponseFactoryContext) =>
  */
 export interface ResponseStructureConfig {
     /**
-     * @description Whether payloads should be wrapped in a root key. Defaults to true.
+     * @description Whether payloads should be wrapped in a root key.
      * Set to false to return unwrapped payloads when possible.
+     * @default true
      */
     wrap?: boolean | undefined
 
     /**
-     * @description The key used to wrap resource payloads. Defaults to "data".
+     * @description The key used to wrap resource payloads.
+     * @default 'data'
      */
     rootKey?: string | undefined
 
@@ -198,6 +200,8 @@ export interface Pagination {
     lastPage?: number | undefined;
     prevPage?: number | undefined;
     nextPage?: number | undefined;
+    path?: string | undefined;
+    links?: any;
 }
 
 /**
@@ -253,10 +257,23 @@ export interface Config {
     /**
      * @description This option allows you to specify the extra properties that should be included in the response body when a resource is paginated. You can choose to include either 'meta', 'links', or both, or you can provide custom property names for these extras.
      */
-    paginatedExtras: ['meta', 'links'] | {
+    paginatedExtras: ('meta' | 'links' | 'cursor')[] | {
         meta?: string | undefined;
         links?: string | undefined;
+        cursor?: string | undefined;
     },
+
+    /**
+     * @description Base URL used to build absolute pagination links, for example `https://localhost`.
+     * If `pagination.path` is present on a resource, it will be joined with this value.
+     */
+    baseUrl: string
+
+    /**
+     * @description Query parameter name used for pagination page links.
+     * @default 'page'
+     */
+    pageName: string
 
     /**
      * @description This option allows you to specify the property names that should be used for pagination links in the response body when a resource is paginated. You can provide custom property names for the pagination links, and if not specified, the default property names will be used.
@@ -280,6 +297,14 @@ export interface Config {
         per_page?: string | undefined
         last_page?: string | undefined
         current_page?: string | undefined
+    }
+
+    /**
+     * @description This option allows you to specify the property names that should be used for cursor metadata in the response body when a resource is cursor-paginated.
+     */
+    cursorMeta: {
+        previous?: string | undefined
+        next?: string | undefined
     }
 
     /**

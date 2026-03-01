@@ -1,9 +1,22 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import { Resource } from 'src'
 import { ResourceCollection } from 'src/ResourceCollection'
+import {
+    setGlobalBaseUrl,
+    setGlobalCursorMeta,
+    setGlobalPageName,
+    setGlobalPaginatedExtras,
+} from 'src/utility'
 
 describe('Resource Pagination', () => {
+    afterEach(() => {
+        setGlobalBaseUrl('https://localhost')
+        setGlobalPageName('page')
+        setGlobalPaginatedExtras(['meta', 'links'])
+        setGlobalCursorMeta({ previous: 'previous', next: 'next' })
+    })
+
     it('should handle pagination data correctly', () => {
         const resource = {
             data: [{ id: 1 }, { id: 2 }],
@@ -12,6 +25,7 @@ describe('Resource Pagination', () => {
                 perPage: 10,
                 currentPage: 1,
                 lastPage: 10,
+                path: '/users',
             },
         }
 
@@ -21,13 +35,14 @@ describe('Resource Pagination', () => {
         expect(jsonResponse).toEqual({
             data: [{ id: 1 }, { id: 2 }],
             links: {
-                last: 10,
+                last: 'https://localhost/users?page=10',
             },
             meta: {
                 total: 100,
                 per_page: 10,
                 current_page: 1,
                 last_page: 10,
+                path: '/users',
             },
         })
     })
@@ -74,6 +89,7 @@ describe('Resource Pagination', () => {
                 perPage: 10,
                 currentPage: 1,
                 lastPage: 1,
+                path: '/users',
             },
         }
 
@@ -83,13 +99,66 @@ describe('Resource Pagination', () => {
         expect(jsonResponse).toEqual({
             data: [],
             links: {
-                last: 1,
+                last: 'https://localhost/users?page=1',
             },
             meta: {
                 total: 0,
                 per_page: 10,
                 current_page: 1,
                 last_page: 1,
+                path: '/users',
+            },
+        })
+    })
+
+    it('should build links with custom baseUrl and pageName config', () => {
+        setGlobalBaseUrl('https://api.example.com/v1')
+        setGlobalPageName('p')
+
+        const resource = {
+            data: [{ id: 1 }, { id: 2 }],
+            pagination: {
+                firstPage: 1,
+                currentPage: 2,
+                nextPage: 3,
+                path: '/users',
+            },
+        }
+
+        const jsonResponse = new ResourceCollection(resource).json().body
+
+        expect(jsonResponse).toEqual({
+            data: [{ id: 1 }, { id: 2 }],
+            links: {
+                first: 'https://api.example.com/v1/users?p=1',
+                next: 'https://api.example.com/v1/users?p=3',
+            },
+            meta: {
+                current_page: 2,
+                path: '/users',
+            },
+        })
+    })
+
+    it('should support cursor as a configured paginated extra with cursorMeta mapping', () => {
+        setGlobalPaginatedExtras({ meta: 'meta', links: 'links', cursor: 'cursor' })
+        setGlobalCursorMeta({ previous: 'before', next: 'after' })
+
+        const resource = {
+            data: [{ id: 1 }],
+            cursor: {
+                previous: 'cursor_prev',
+                next: 'cursor_next',
+            },
+        }
+
+        const jsonResponse = new ResourceCollection(resource).json().body
+
+        expect(jsonResponse).toEqual({
+            data: [{ id: 1 }],
+            cursor: {
+                before: 'cursor_prev',
+                after: 'cursor_next',
             },
         })
     })
