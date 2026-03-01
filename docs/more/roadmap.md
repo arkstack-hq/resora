@@ -84,6 +84,18 @@ Add conditional transformation helpers:
 
 [x]Implemented
 
+## NestJS and Fastify Support
+
+Add direct support for NestJS and Fastify response objects in:
+
+- `withResponse()` hooks
+- `.response()` dispatch flow
+- `ServerResponse` adapter handling
+
+This will enable first-class integration without requiring custom wrappers.
+
+[ ]Implemented
+
 ## Plugin System
 
 Introduce a first-class plugin architecture to extend Resora without modifying core behavior.
