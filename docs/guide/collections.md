@@ -164,6 +164,13 @@ Result:
 }
 ```
 
+Collections also support metadata customization:
+
+- Use class-level `with()` hooks to attach reusable metadata.
+- Use `withMeta()` for typed fluent metadata per response.
+
+Details and merge behavior are documented in [Writing Resources - Metadata APIs: with() vs withMeta()](./writing-resources.md#metadata-apis-with-vs-withmeta).
+
 ---
 
 ## Design Behavior Summary

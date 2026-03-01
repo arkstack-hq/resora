@@ -1,4 +1,4 @@
-import { CaseStyle, Config, ResponseFactory, ResponseFactoryContext, ResponseStructureConfig } from './types'
+import { CaseStyle, Config, MetaData, ResponseFactory, ResponseFactoryContext, ResponseStructureConfig } from './types'
 
 import { existsSync } from 'fs'
 import path from 'path'
@@ -81,6 +81,9 @@ export const getGlobalResponseFactory = (): ResponseFactory | undefined => {
 
 /**
  * Build a response envelope from payload/meta and optional custom factory.
+ * 
+ * @param param0 
+ * @returns 
  */
 export const buildResponseEnvelope = ({
     payload,
@@ -112,6 +115,75 @@ export const buildResponseEnvelope = ({
 }
 
 /**
+ * Check if a value is a plain object (not an array, date, regexp, etc.)
+ * 
+ * @param value The value to check
+ * @returns True if the value is a plain object, false otherwise
+ */
+const isPlainObject = (value: any): value is Record<string, any> => {
+    if (typeof value !== 'object' || value === null) return false
+    if (Array.isArray(value) || value instanceof Date || value instanceof RegExp) return false
+
+    const proto = Object.getPrototypeOf(value)
+
+    return proto === Object.prototype || proto === null
+}
+
+/**
+ * Resolve metadata from an overridden no-arg class with() hook.
+ *
+ * This allows custom classes to define with() { return { ... } } while
+ * preserving default framework metadata merging behavior.
+ */
+export const resolveWithHookMetadata = (
+    instance: any,
+    baseWithMethod: (...args: any[]) => any
+): MetaData | undefined => {
+    const candidate = instance?.with
+    if (typeof candidate !== 'function' || candidate === baseWithMethod) {
+        return undefined
+    }
+
+    // Only auto-invoke no-arg hooks to avoid interfering with chain-style with(meta)
+    if (candidate.length > 0) {
+        return undefined
+    }
+
+    const result = candidate.call(instance)
+
+    return isPlainObject(result) ? result : undefined
+}
+
+/**
+ * Deep-merge metadata objects.
+ * Arrays are replaced by the incoming value.
+ * 
+ * @param base The base metadata object
+ * @param incoming The incoming metadata object to merge into the base 
+ * @returns 
+ */
+export const mergeMetadata = (
+    base?: Record<string, any> | undefined,
+    incoming?: Record<string, any> | undefined
+): Record<string, any> | undefined => {
+    if (!incoming) return base
+    if (!base) return incoming
+
+    const merged: Record<string, any> = { ...base }
+
+    for (const [key, value] of Object.entries(incoming)) {
+        const existing = merged[key]
+        if (isPlainObject(existing) && isPlainObject(value)) {
+            merged[key] = mergeMetadata(existing, value)
+        } else {
+            merged[key] = value
+        }
+    }
+
+    return merged
+}
+
+/**
  * Split a string into its constituent words by detecting
  * camelCase, PascalCase, snake_case, kebab-case, and whitespace boundaries.
  *
@@ -131,6 +203,9 @@ export const splitWords = (str: string): string[] => {
 
 /**
  * Convert a string to camelCase.
+ * 
+ * @param str The string to convert
+ * @returns The converted string in camelCase
  */
 export const toCamelCase = (str: string): string => {
     const words = splitWords(str)
@@ -142,6 +217,9 @@ export const toCamelCase = (str: string): string => {
 
 /**
  * Convert a string to snake_case.
+ * 
+ * @param str The string to convert
+ * @returns The converted string in snake_case
  */
 export const toSnakeCase = (str: string): string => {
     return splitWords(str).join('_')
@@ -149,6 +227,9 @@ export const toSnakeCase = (str: string): string => {
 
 /**
  * Convert a string to PascalCase.
+ * 
+ * @param str The string to convert
+ * @return The converted string in PascalCase
  */
 export const toPascalCase = (str: string): string => {
     return splitWords(str)
@@ -158,6 +239,9 @@ export const toPascalCase = (str: string): string => {
 
 /**
  * Convert a string to kebab-case.
+ * 
+ * @param str The string to convert
+ * @returns The converted string in kebab-case
  */
 export const toKebabCase = (str: string): string => {
     return splitWords(str).join('-')
@@ -210,6 +294,11 @@ if (!existsSync(stubsDir)) {
     stubsDir = path.resolve(process.cwd(), 'stubs')
 }
 
+/**
+ * Get the default configuration for the package, including stub paths and default options.
+ * 
+ * @returns The default configuration object
+ */
 export const getDefaultConfig = (): Config => {
     return {
         stubsDir,

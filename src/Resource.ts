@@ -2,6 +2,7 @@ import type { H3Event } from 'h3'
 import {
   CaseStyle,
   Collectible,
+  MetaData,
   NonCollectible,
   ResourceBody,
   ResourceData,
@@ -15,6 +16,8 @@ import {
   getCaseTransformer,
   getGlobalCase,
   getGlobalResponseStructure,
+  mergeMetadata,
+  resolveWithHookMetadata,
   transformKeys,
 } from './utility'
 
@@ -25,6 +28,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> {
   [key: string]: any;
   public body: ResourceBody<R> = { data: {} as any }
   public resource: R
+  private additionalMeta?: MetaData
 
   /**
    * Preferred case style for this resource's output keys.
@@ -42,6 +46,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> {
     data?: boolean
     toArray?: boolean
     additional?: boolean
+    with?: boolean
     status?: boolean
     then?: boolean
     toResponse?: boolean
@@ -108,6 +113,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> {
 
   private getPayloadKey () {
     const { rootKey, factory } = this.resolveResponseStructure()
+
     return factory ? undefined : rootKey
   }
 
@@ -135,9 +141,12 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> {
         data = transformKeys(data, transformer)
       }
 
+      const hookMeta = resolveWithHookMetadata(this, Resource.prototype.with)
+
       const { rootKey, factory } = this.resolveResponseStructure()
       this.body = buildResponseEnvelope({
         payload: data,
+        meta: mergeMetadata(hookMeta, this.additionalMeta),
         rootKey,
         factory,
         context: {
@@ -146,6 +155,44 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> {
         },
       }) as ResourceBody<R>
     }
+
+    return this
+  }
+
+  /**
+   * Append structured metadata to the response body.
+   *
+   * @param meta  Metadata object or metadata factory
+   * @returns
+   */
+  with (meta?: any): any {
+    this.called.with = true
+
+    if (typeof meta === 'undefined') {
+      return this.additionalMeta || {}
+    }
+
+    const resolvedMeta = typeof meta === 'function'
+      ? (meta(this.resource) as MetaData)
+      : meta
+
+    this.additionalMeta = mergeMetadata(this.additionalMeta, resolvedMeta)
+
+    if (this.called.json) {
+      this.body.meta = mergeMetadata(this.body.meta, resolvedMeta)
+    }
+
+    return this
+  }
+
+  /**
+   * Typed fluent metadata helper.
+   *
+   * @param meta  Metadata object or metadata factory
+   * @returns
+   */
+  withMeta<M extends MetaData> (meta: M | ((resource: R) => M)) {
+    this.with(meta)
 
     return this
   }

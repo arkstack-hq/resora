@@ -4,6 +4,7 @@ import {
   ResourceData,
   Collectible,
   CollectionBody,
+  MetaData,
   ResponseStructureConfig,
 } from 'src/types'
 import { ServerResponse } from './ServerResponse'
@@ -14,6 +15,8 @@ import {
   getCaseTransformer,
   getGlobalCase,
   getGlobalResponseStructure,
+  mergeMetadata,
+  resolveWithHookMetadata,
   transformKeys,
 } from './utility'
 
@@ -25,6 +28,7 @@ export class ResourceCollection<R extends ResourceData[] | Collectible = Resourc
   public body: CollectionBody<R> = { data: [] as any }
   public resource: R
   public collects?: typeof Resource<T>
+  private additionalMeta?: MetaData
 
   /**
    * Preferred case style for this collection's output keys.
@@ -42,6 +46,7 @@ export class ResourceCollection<R extends ResourceData[] | Collectible = Resourc
     data?: boolean
     toArray?: boolean
     additional?: boolean
+    with?: boolean
     status?: boolean
     then?: boolean
     toResponse?: boolean
@@ -73,6 +78,7 @@ export class ResourceCollection<R extends ResourceData[] | Collectible = Resourc
 
   private getPayloadKey () {
     const { rootKey, factory } = this.resolveResponseStructure()
+
     return factory ? undefined : rootKey
   }
 
@@ -114,10 +120,15 @@ export class ResourceCollection<R extends ResourceData[] | Collectible = Resourc
         data = transformKeys(data, transformer) as CollectionBody<R>['data']
       }
 
+      const hookMeta = resolveWithHookMetadata(this, ResourceCollection.prototype.with)
+
       const { rootKey, factory } = this.resolveResponseStructure()
       this.body = buildResponseEnvelope({
         payload: data,
-        meta,
+        meta: mergeMetadata(
+          mergeMetadata(meta as MetaData | undefined, hookMeta),
+          this.additionalMeta
+        ),
         rootKey,
         factory,
         context: {
@@ -126,6 +137,44 @@ export class ResourceCollection<R extends ResourceData[] | Collectible = Resourc
         },
       }) as CollectionBody<R>
     }
+
+    return this
+  }
+
+  /**
+   * Append structured metadata to the response body.
+   *
+   * @param meta  Metadata object or metadata factory
+   * @returns
+   */
+  with (meta?: any): any {
+    this.called.with = true
+
+    if (typeof meta === 'undefined') {
+      return this.additionalMeta || {}
+    }
+
+    const resolvedMeta = typeof meta === 'function'
+      ? (meta(this.resource) as MetaData)
+      : meta
+
+    this.additionalMeta = mergeMetadata(this.additionalMeta, resolvedMeta)
+
+    if (this.called.json) {
+      this.body.meta = mergeMetadata(this.body.meta as MetaData | undefined, resolvedMeta) as CollectionBody<R>['meta']
+    }
+
+    return this
+  }
+
+  /**
+   * Typed fluent metadata helper.
+   *
+   * @param meta  Metadata object or metadata factory
+   * @returns
+   */
+  withMeta<M extends MetaData> (meta: M | ((resource: R) => M)) {
+    this.with(meta)
 
     return this
   }

@@ -84,3 +84,12 @@ app.get('/', async (req, res) => {
   return await new ResourceCollection(users, res);
 });
 ```
+
+## Custom Metadata
+
+You can attach custom metadata in two ways:
+
+- `with()` for class-level metadata hooks in custom resources/collections
+- `withMeta()` for typed fluent metadata chaining in request handlers
+
+See details and merge behavior in [Writing Resources - Metadata APIs: with() vs withMeta()](./writing-resources.md#metadata-apis-with-vs-withmeta).

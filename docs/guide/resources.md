@@ -87,6 +87,15 @@ Result:
 
 `additional()` is chainable.
 
+## Metadata Customization
+
+Resources also support metadata customization via `with()` and `withMeta()`.
+
+- Use `with()` for class-level metadata hooks.
+- Use `withMeta()` for typed fluent metadata chaining.
+
+See the full guide in [Writing Resources - Metadata APIs: with() vs withMeta()](./writing-resources.md#metadata-apis-with-vs-withmeta).
+
 ## Building a Response Object
 
 ```ts

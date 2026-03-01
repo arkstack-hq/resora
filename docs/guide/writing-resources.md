@@ -89,6 +89,51 @@ Key point:
 
 - `this.id` and `this.name` are accessible because the base class proxies properties from the original resource.
 
+## Metadata APIs: `with()` vs `withMeta()`
+
+Resora supports two metadata patterns:
+
+- `with()` as a **class hook** (override in custom classes)
+- `withMeta()` as a **typed fluent API** (chain in handlers/services)
+
+### Class hook: `with()`
+
+Use this when the resource class should always contribute metadata.
+
+```ts
+class UserResource extends Resource {
+  with() {
+    return {
+      source: 'user-resource',
+      apiVersion: 'v1',
+    };
+  }
+}
+```
+
+When `json()` runs, this metadata is merged into `meta` automatically.
+
+### Fluent API: `withMeta()`
+
+Use this for per-request metadata and strong TypeScript inference.
+
+```ts
+const body = new UserResource({ id: 1, name: 'John' })
+  .withMeta((resource) => ({ actor: resource.name }))
+  .withMeta({ traceId: 'abc-123' })
+  .json().body;
+```
+
+### Merge behavior
+
+Metadata is merged (deeply) in this order:
+
+1. Built-in defaults (e.g. `pagination` / `cursor` for collections)
+2. Class hook metadata from `with()`
+3. Fluent metadata from `withMeta(...)` and/or `with({...})`
+
+So custom metadata does not replace important defaults unless you explicitly overwrite the same key.
+
 ## Creating Collections From a Resource
 
 Every `Resource` subclass can generate a collection using the static `collection()` method.

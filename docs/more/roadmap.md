@@ -45,7 +45,7 @@ Allow developers to append structured meta without manual merging.
 
 ## Customizing Outgoing Response
 
-Introduce a `withResponse()` method on resource and collection classes.
+Introduce a `withResponse()` method on custom resource and collection classes.
 
 This will allow on per classes bases:
 
