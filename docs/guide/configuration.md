@@ -205,14 +205,29 @@ export default defineConfig({
 });
 ```
 
-### **`responseStructure`** - _`{ rootKey: 'data' }`_
+### **`responseStructure`** - _`{ rootKey: 'data', wrap: true }`_
 
 Customizes the JSON envelope used for serialized responses.
 
 Supported options:
 
+- `wrap`: enable/disable payload wrapping
 - `rootKey`: rename wrapper key (`data` to `payload`, etc.)
 - `factory`: fully custom response builder
+
+#### Disable wrapping
+
+```ts
+export default defineConfig({
+  responseStructure: {
+    wrap: false,
+  },
+});
+```
+
+For plain object payloads, the outer `data` envelope is removed.
+
+When metadata exists on non-object payloads (for example arrays with pagination meta), Resora keeps a wrapped object to preserve `meta`.
 
 #### Custom root key
 

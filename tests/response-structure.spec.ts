@@ -4,6 +4,7 @@ import {
     setGlobalResponseFactory,
     setGlobalResponseRootKey,
     setGlobalResponseStructure,
+    setGlobalResponseWrap,
 } from 'src/utility'
 
 import { GenericResource } from 'src/GenericResource'
@@ -15,6 +16,7 @@ describe('Response Structure', () => {
         setGlobalResponseStructure(undefined)
         setGlobalResponseRootKey(undefined)
         setGlobalResponseFactory(undefined)
+        setGlobalResponseWrap(undefined)
         setGlobalCase(undefined)
     })
 
@@ -198,5 +200,71 @@ describe('Response Structure', () => {
         expect(resource.json().body).toEqual({
             payload: { first_name: 'John', last_name: 'Doe' },
         })
+    })
+
+    it('supports disabling wrapping globally for plain resources', () => {
+        setGlobalResponseWrap(false)
+
+        const resource = new Resource({ id: 1, name: 'Test' })
+
+        expect(resource.json().body).toEqual({ id: 1, name: 'Test' })
+    })
+
+    it('supports per-resource wrap override over global wrap setting', () => {
+        setGlobalResponseWrap(false)
+
+        class UserResource extends Resource {
+            static responseStructure = {
+                wrap: true,
+                rootKey: 'result',
+            }
+        }
+
+        const resource = new UserResource({ id: 1, name: 'Test' })
+
+        expect(resource.json().body).toEqual({
+            result: { id: 1, name: 'Test' },
+        })
+    })
+
+    it('keeps meta while wrap is disabled for plain object payloads', () => {
+        setGlobalResponseWrap(false)
+
+        const resource = new Resource({ id: 1, name: 'Test' })
+        const body = resource.withMeta({ requestId: 'r-1' }).json().body
+
+        expect(body).toEqual({
+            id: 1,
+            name: 'Test',
+            meta: { requestId: 'r-1' },
+        })
+    })
+
+    it('falls back to wrapped output for array payloads with meta when wrap is disabled', () => {
+        setGlobalResponseWrap(false)
+
+        const collection = new ResourceCollection({
+            data: [{ id: 1, name: 'A' }],
+            pagination: { currentPage: 1, total: 10 },
+        })
+
+        expect(collection.json().body).toEqual({
+            data: [{ id: 1, name: 'A' }],
+            meta: { pagination: { currentPage: 1, total: 10 } },
+        })
+    })
+
+    it('returns bare arrays for collections without meta when wrap is disabled', () => {
+        setGlobalResponseWrap(false)
+
+        const collection = new ResourceCollection([
+            { id: 1, name: 'A' },
+            { id: 2, name: 'B' },
+        ])
+
+        expect(collection.json().body).toEqual([
+            { id: 1, name: 'A' },
+            { id: 2, name: 'B' },
+        ])
     })
 })

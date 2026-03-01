@@ -76,15 +76,16 @@ export class ResourceCollection<R extends ResourceData[] | Collectible = Resourc
     const global = getGlobalResponseStructure()
 
     return {
+      wrap: local?.wrap ?? collectsLocal?.wrap ?? global?.wrap ?? true,
       rootKey: local?.rootKey ?? collectsLocal?.rootKey ?? global?.rootKey ?? 'data',
       factory: local?.factory ?? collectsLocal?.factory ?? global?.factory,
     }
   }
 
   private getPayloadKey () {
-    const { rootKey, factory } = this.resolveResponseStructure()
+    const { wrap, rootKey, factory } = this.resolveResponseStructure()
 
-    return factory ? undefined : rootKey
+    return factory || !wrap ? undefined : rootKey
   }
 
   /**
@@ -127,13 +128,14 @@ export class ResourceCollection<R extends ResourceData[] | Collectible = Resourc
 
       const hookMeta = resolveWithHookMetadata(this, ResourceCollection.prototype.with)
 
-      const { rootKey, factory } = this.resolveResponseStructure()
+      const { wrap, rootKey, factory } = this.resolveResponseStructure()
       this.body = buildResponseEnvelope({
         payload: data,
         meta: mergeMetadata(
           mergeMetadata(meta as MetaData | undefined, hookMeta),
           this.additionalMeta
         ),
+        wrap,
         rootKey,
         factory,
         context: {

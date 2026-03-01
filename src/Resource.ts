@@ -111,15 +111,16 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> {
     const global = getGlobalResponseStructure()
 
     return {
+      wrap: local?.wrap ?? global?.wrap ?? true,
       rootKey: local?.rootKey ?? global?.rootKey ?? 'data',
       factory: local?.factory ?? global?.factory,
     }
   }
 
   private getPayloadKey () {
-    const { rootKey, factory } = this.resolveResponseStructure()
+    const { wrap, rootKey, factory } = this.resolveResponseStructure()
 
-    return factory ? undefined : rootKey
+    return factory || !wrap ? undefined : rootKey
   }
 
   /**
@@ -148,10 +149,11 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> {
 
       const hookMeta = resolveWithHookMetadata(this, Resource.prototype.with)
 
-      const { rootKey, factory } = this.resolveResponseStructure()
+      const { wrap, rootKey, factory } = this.resolveResponseStructure()
       this.body = buildResponseEnvelope({
         payload: data,
         meta: mergeMetadata(hookMeta, this.additionalMeta),
+        wrap,
         rootKey,
         factory,
         context: {

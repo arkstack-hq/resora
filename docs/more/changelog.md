@@ -26,6 +26,7 @@ The format follows semantic versioning principles.
 
 - Data wrapping configuration
 - Conditional attribute helpers
+- Plugin System for lifecycle extension without core modification
 
 ## [0.1.3] - [0.1.6] - Patch Releases
 

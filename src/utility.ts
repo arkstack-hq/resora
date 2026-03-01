@@ -54,6 +54,25 @@ export const setGlobalResponseRootKey = (rootKey: string | undefined): void => {
 }
 
 /**
+ * Enable or disable global data wrapping behavior.
+ *
+ * @param wrap  Whether payloads should be wrapped in a root key
+ */
+export const setGlobalResponseWrap = (wrap: boolean | undefined): void => {
+    globalResponseStructure = {
+        ...(globalResponseStructure || {}),
+        wrap,
+    }
+}
+
+/**
+ * Get the global wrap behavior.
+ */
+export const getGlobalResponseWrap = (): boolean | undefined => {
+    return globalResponseStructure?.wrap
+}
+
+/**
  * Get the global response root key.
  */
 export const getGlobalResponseRootKey = (): string | undefined => {
@@ -88,12 +107,14 @@ export const getGlobalResponseFactory = (): ResponseFactory | undefined => {
 export const buildResponseEnvelope = ({
     payload,
     meta,
+    wrap = true,
     rootKey = 'data',
     factory,
     context,
 }: {
     payload: any
     meta?: Record<string, any> | undefined
+    wrap?: boolean
     rootKey?: string
     factory?: ResponseFactory | undefined
     context: Omit<ResponseFactoryContext, 'rootKey' | 'meta'>
@@ -104,6 +125,24 @@ export const buildResponseEnvelope = ({
             rootKey,
             meta,
         })
+    }
+
+    if (!wrap) {
+        if (typeof meta === 'undefined') {
+            return payload
+        }
+
+        if (isPlainObject(payload)) {
+            return {
+                ...payload,
+                meta,
+            }
+        }
+
+        return {
+            [rootKey]: payload,
+            meta,
+        }
     }
 
     const body: Record<string, any> = { [rootKey]: payload }
@@ -304,6 +343,7 @@ export const getDefaultConfig = (): Config => {
         stubsDir,
         preferredCase: 'camel',
         responseStructure: {
+            wrap: true,
             rootKey: 'data',
         },
         paginatedExtras: ['meta', 'links'],

@@ -31,6 +31,12 @@ export type ResponseFactory = (payload: any, context: ResponseFactoryContext) =>
  */
 export interface ResponseStructureConfig {
     /**
+     * @description Whether payloads should be wrapped in a root key. Defaults to true.
+     * Set to false to return unwrapped payloads when possible.
+     */
+    wrap?: boolean | undefined
+
+    /**
      * @description The key used to wrap resource payloads. Defaults to "data".
      */
     rootKey?: string | undefined
