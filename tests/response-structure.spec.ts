@@ -1,15 +1,14 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import {
+    GenericResource,
+    Resource,
+    ResourceCollection,
     setGlobalCase,
     setGlobalResponseFactory,
     setGlobalResponseRootKey,
     setGlobalResponseStructure,
     setGlobalResponseWrap,
-} from 'src/utility'
-
-import { GenericResource } from 'src/GenericResource'
-import { Resource } from 'src'
-import { ResourceCollection } from 'src/ResourceCollection'
+} from 'src'
 
 describe('Response Structure', () => {
     afterEach(() => {

@@ -1,9 +1,7 @@
-import { Collectible, ResourceData } from 'src/types'
+import { Collectible, Resource, ResourceCollection, ResourceData } from 'src'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { rename, unlink, writeFile } from 'fs/promises'
 
-import { Resource } from 'src'
-import { ResourceCollection } from 'src/ResourceCollection'
 import { existsSync } from 'fs'
 import path from 'path'
 
@@ -295,7 +293,7 @@ describe('Configuration', () => {
 
     beforeAll(async () => {
         const configContent = `
-            import { defineConfig } from './src/utility'
+            import { defineConfig } from './src/utilities'
 
             export default defineConfig({
                 resourcesDir: 'custom/resources',

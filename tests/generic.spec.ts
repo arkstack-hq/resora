@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { GenericResource } from 'src/GenericResource'
-import { ResourceData } from 'src/types'
+import { GenericResource, ResourceData } from 'src'
 
 describe('Generic Core', () => {
     it('should create a Resource instance with correct data', () => {

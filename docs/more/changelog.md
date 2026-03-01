@@ -6,6 +6,12 @@ The format follows semantic versioning principles.
 
 ## [Unreleased]
 
+### Planned
+
+- Plugin System for lifecycle extension without core modification
+
+## [0.2.0] - Major Release
+
 ### Added
 
 - Case customization strategies with global and per-class support (`camel`, `snake`, `pascal`, `kebab`, and custom transformers).
@@ -32,11 +38,6 @@ The format follows semantic versioning principles.
 - Added cross-links in resources and collections guides for case, envelope, metadata, and outgoing response customization.
 - Added configuration guide coverage for pagination URL generation and cursor metadata customization.
 - Added guide coverage for conditional attribute helper usage in custom resources.
-
-### Planned
-
-- Conditional attribute helpers
-- Plugin System for lifecycle extension without core modification
 
 ## [0.1.3] - [0.1.6] - Patch Releases
 

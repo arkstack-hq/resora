@@ -1,4 +1,4 @@
-import { defineConfig } from './src/utility'
+import { defineConfig } from './src/utilities'
 
 export default defineConfig({
   resourcesDir: 'src/dev/http/resources',

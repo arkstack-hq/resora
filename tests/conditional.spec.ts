@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { GenericResource } from 'src/GenericResource'
-import { Resource } from 'src'
-import { ResourceCollection } from 'src/ResourceCollection'
+import { GenericResource, Resource, ResourceCollection } from 'src'
 
 describe('Conditional Attributes', () => {
     it('supports when(), whenNotNull(), and mergeWhen() on Resource', () => {

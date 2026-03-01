@@ -1,8 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { H3 } from 'h3'
-import { Resource } from 'src'
-import { ResourceCollection } from 'src/ResourceCollection'
+import { Resource, ResourceCollection } from 'src'
 
 let app: H3
 

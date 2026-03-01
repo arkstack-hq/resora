@@ -7,7 +7,7 @@ import {
   ResourceBody,
   ResourceData,
   ResponseStructureConfig,
-} from 'src/types'
+} from './types'
 import { ServerResponse } from './ServerResponse'
 import type { Response } from 'express'
 import { ResourceCollection } from './ResourceCollection'
@@ -24,7 +24,7 @@ import {
   resolveWithHookMetadata,
   sanitizeConditionalAttributes,
   transformKeys,
-} from './utility'
+} from './utilities'
 
 /**
  * Resource class to handle API resource transformation and response building

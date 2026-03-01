@@ -1,7 +1,7 @@
 import { GenericBody, Resource, ServerResponse } from 'src'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { ResourceCollection } from 'src/ResourceCollection'
+import { ResourceCollection } from 'src'
 import { Server } from 'http'
 import express from 'express'
 import supertest from 'supertest'

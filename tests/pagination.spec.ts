@@ -1,13 +1,13 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { Resource } from 'src'
-import { ResourceCollection } from 'src/ResourceCollection'
 import {
+    Resource,
+    ResourceCollection,
     setGlobalBaseUrl,
     setGlobalCursorMeta,
     setGlobalPageName,
     setGlobalPaginatedExtras,
-} from 'src/utility'
+} from 'src'
 
 describe('Resource Pagination', () => {
     afterEach(() => {

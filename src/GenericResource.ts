@@ -7,7 +7,7 @@ import {
   NonCollectible,
   ResourceData,
   ResponseStructureConfig,
-} from 'src/types'
+} from './types'
 import { ServerResponse } from './ServerResponse'
 import type { Response } from 'express'
 import { Resource } from './Resource'
@@ -26,7 +26,7 @@ import {
   resolveWithHookMetadata,
   sanitizeConditionalAttributes,
   transformKeys,
-} from './utility'
+} from './utilities'
 
 /**
  * GenericResource class to handle API resource transformation and response building

@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import {
+    GenericResource,
     getCaseTransformer,
     getGlobalCase,
+    Resource,
+    ResourceCollection,
+    ResourceData,
     setGlobalCase,
     splitWords,
     toCamelCase,
@@ -9,12 +13,7 @@ import {
     toPascalCase,
     toSnakeCase,
     transformKeys,
-} from 'src/utility'
-
-import { GenericResource } from 'src/GenericResource'
-import { Resource } from 'src'
-import { ResourceCollection } from 'src/ResourceCollection'
-import { ResourceData } from 'src/types'
+} from 'src'
 
 describe('splitWords', () => {
     it('should split camelCase', () => {

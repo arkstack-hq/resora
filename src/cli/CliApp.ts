@@ -2,8 +2,8 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSyn
 import { dirname, join } from 'path'
 
 import { Command } from '@h3ravel/musket'
-import { Config } from 'src/types'
-import { defineConfig } from 'src/utility'
+import { Config } from '../types'
+import { defineConfig } from '../utilities'
 
 export class CliApp {
     public command!: Command

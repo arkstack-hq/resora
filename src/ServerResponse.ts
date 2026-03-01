@@ -1,4 +1,4 @@
-import { Collectible, NonCollectible, ResourceData } from 'src/types'
+import { Collectible, NonCollectible, ResourceData } from './types'
 
 import type { H3Event } from 'h3'
 import type { Response } from 'express'

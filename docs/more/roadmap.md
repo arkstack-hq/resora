@@ -13,6 +13,8 @@ Allow configurable key casing strategies:
 
 This enables seamless integration with legacy APIs or strict backend standards.
 
+[x]Implemented
+
 ## Customizing Response Structure
 
 Provide configuration to redefine the default JSON envelope.
@@ -31,6 +33,8 @@ Planned support:
 - Fully custom response factory
 - Global or per-resource configuration
 
+[x]Implemented
+
 ## Customizing and Adding Metadata
 
 Introduce structured metadata customization via a `with()` method on resource and collection classes
@@ -43,6 +47,8 @@ Support both:
 
 Allow developers to append structured meta without manual merging.
 
+[x]Implemented
+
 ## Customizing Outgoing Response
 
 Introduce a `withResponse()` method on custom resource and collection classes.
@@ -54,6 +60,8 @@ This will allow on per classes bases:
 - Framework-specific integrations
 - Final response mutation before dispatch
 
+[x]Implemented
+
 ## Data Wrapping Configuration
 
 Currently, the outermost resource is wrapped in a "data" key by default.
@@ -64,7 +72,7 @@ Planned:
 - Ability to rename wrapping key
 - Per-resource wrapping configuration
 
-✅ Implemented
+[x]Implemented
 
 ## Conditional Attributes
 
@@ -74,7 +82,7 @@ Add conditional transformation helpers:
 - `this.whenNotNull(value)`
 - `this.mergeWhen(condition, object | () => object)`
 
-✅ Implemented
+[x]Implemented
 
 ## Plugin System
 

@@ -1,9 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { GenericResource } from 'src/GenericResource'
-import { Resource } from 'src'
-import { ResourceCollection } from 'src/ResourceCollection'
-import { setGlobalResponseRootKey } from 'src/utility'
+import { GenericResource, Resource, ResourceCollection, setGlobalResponseRootKey } from 'src'
 
 describe('Metadata with() API', () => {
     afterEach(() => {

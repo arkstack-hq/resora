@@ -6,7 +6,7 @@ import {
   CollectionBody,
   MetaData,
   ResponseStructureConfig,
-} from 'src/types'
+} from './types'
 import { ServerResponse } from './ServerResponse'
 import type { Response } from 'express'
 import { Resource } from './Resource'
@@ -25,7 +25,7 @@ import {
   resolveWithHookMetadata,
   sanitizeConditionalAttributes,
   transformKeys,
-} from './utility'
+} from './utilities'
 
 /**
  * ResourceCollection class to handle API resource transformation and response building for collections
