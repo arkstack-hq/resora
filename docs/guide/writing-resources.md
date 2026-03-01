@@ -304,7 +304,7 @@ Output:
 }
 ```
 
-Cursor metadata is automatically mapped to `meta.cursor`.
+Cursor metadata is automatically mapped to `cursor`.
 
 ## Pagination + Cursor Together
 
