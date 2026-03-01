@@ -9,7 +9,7 @@ The format follows semantic versioning principles.
 ### Planned
 
 - Plugin System for lifecycle extension without core modification
-- Direct support for NestJS and Fastify response objects in `withResponse()`, `.response()`, and `ServerResponse` class.
+- Direct support for NextJs API, NestJS, and Fastify response objects in `withResponse()`, `.response()`, and `ServerResponse` class.
 
 ## [0.2.0] - Major Release
 
