@@ -1,9 +1,21 @@
 import type { H3Event } from 'h3'
-import { CaseStyle, ResourceData, Collectible, CollectionBody } from 'src/types'
+import {
+  CaseStyle,
+  ResourceData,
+  Collectible,
+  CollectionBody,
+  ResponseStructureConfig,
+} from 'src/types'
 import { ServerResponse } from './ServerResponse'
 import type { Response } from 'express'
 import { Resource } from './Resource'
-import { getCaseTransformer, getGlobalCase, transformKeys } from './utility'
+import {
+  buildResponseEnvelope,
+  getCaseTransformer,
+  getGlobalCase,
+  getGlobalResponseStructure,
+  transformKeys,
+} from './utility'
 
 /**
  * ResourceCollection class to handle API resource transformation and response building for collections
@@ -19,6 +31,11 @@ export class ResourceCollection<R extends ResourceData[] | Collectible = Resourc
    * Set on a subclass to override the global default.
    */
   static preferredCase?: CaseStyle
+
+  /**
+   * Response structure override for this collection class.
+   */
+  static responseStructure?: ResponseStructureConfig
 
   private called: {
     json?: boolean
@@ -43,6 +60,22 @@ export class ResourceCollection<R extends ResourceData[] | Collectible = Resourc
     return this.toArray()
   }
 
+  private resolveResponseStructure () {
+    const local = (this.constructor as typeof ResourceCollection).responseStructure
+    const collectsLocal = (this.collects as typeof Resource | undefined)?.responseStructure
+    const global = getGlobalResponseStructure()
+
+    return {
+      rootKey: local?.rootKey ?? collectsLocal?.rootKey ?? global?.rootKey ?? 'data',
+      factory: local?.factory ?? collectsLocal?.factory ?? global?.factory,
+    }
+  }
+
+  private getPayloadKey () {
+    const { rootKey, factory } = this.resolveResponseStructure()
+    return factory ? undefined : rootKey
+  }
+
   /**
    * Convert resource to JSON response format
    * 
@@ -58,18 +91,18 @@ export class ResourceCollection<R extends ResourceData[] | Collectible = Resourc
         data = data.map((item: any) => new this.collects!(item).data())
       }
 
-      this.body = { data } as CollectionBody<R>
+      let meta: CollectionBody<R>['meta']
 
       if (!Array.isArray(this.resource)) {
         if (this.resource.pagination && this.resource.cursor)
-          this.body.meta = {
+          meta = {
             pagination: this.resource.pagination,
             cursor: this.resource.cursor
           } as CollectionBody<R>['meta']
         else if (this.resource.pagination)
-          this.body.meta = { pagination: this.resource.pagination } as CollectionBody<R>['meta']
+          meta = { pagination: this.resource.pagination } as CollectionBody<R>['meta']
         else if (this.resource.cursor)
-          this.body.meta = { cursor: this.resource.cursor } as CollectionBody<R>['meta']
+          meta = { cursor: this.resource.cursor } as CollectionBody<R>['meta']
       }
 
       // Apply case transformation if configured
@@ -78,8 +111,20 @@ export class ResourceCollection<R extends ResourceData[] | Collectible = Resourc
         ?? getGlobalCase()
       if (caseStyle) {
         const transformer = getCaseTransformer(caseStyle)
-        this.body.data = transformKeys(this.body.data, transformer) as CollectionBody<R>['data']
+        data = transformKeys(data, transformer) as CollectionBody<R>['data']
       }
+
+      const { rootKey, factory } = this.resolveResponseStructure()
+      this.body = buildResponseEnvelope({
+        payload: data,
+        meta,
+        rootKey,
+        factory,
+        context: {
+          type: 'collection',
+          resource: this.resource,
+        },
+      }) as CollectionBody<R>
     }
 
     return this
@@ -110,8 +155,10 @@ export class ResourceCollection<R extends ResourceData[] | Collectible = Resourc
     delete extra.cursor
     delete extra.pagination
 
-    if (extra.data && Array.isArray(this.body.data)) {
-      this.body.data = [...this.body.data, ...extra.data] as never
+    const payloadKey = this.getPayloadKey()
+
+    if (extra.data && payloadKey && Array.isArray(this.body[payloadKey])) {
+      this.body[payloadKey] = [...this.body[payloadKey], ...extra.data] as never
     }
 
     this.body = {

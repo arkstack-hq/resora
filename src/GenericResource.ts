@@ -1,9 +1,22 @@
 import type { H3Event } from 'h3'
-import { CaseStyle, Collectible, GenericBody, NonCollectible, ResourceData } from 'src/types'
+import {
+  CaseStyle,
+  Collectible,
+  GenericBody,
+  NonCollectible,
+  ResourceData,
+  ResponseStructureConfig,
+} from 'src/types'
 import { ServerResponse } from './ServerResponse'
 import type { Response } from 'express'
 import { Resource } from './Resource'
-import { getCaseTransformer, getGlobalCase, transformKeys } from './utility'
+import {
+  buildResponseEnvelope,
+  getCaseTransformer,
+  getGlobalCase,
+  getGlobalResponseStructure,
+  transformKeys,
+} from './utility'
 
 /**
  * GenericResource class to handle API resource transformation and response building
@@ -22,6 +35,11 @@ export class GenericResource<
    * Set on a subclass to override the global default.
    */
   static preferredCase?: CaseStyle
+
+  /**
+   * Response structure override for this generic resource class.
+   */
+  static responseStructure?: ResponseStructureConfig
 
   private called: {
     json?: boolean
@@ -69,6 +87,23 @@ export class GenericResource<
     return this.resource
   }
 
+  private resolveResponseStructure () {
+    const local = (this.constructor as typeof GenericResource).responseStructure
+    const collectsLocal = (this.collects as typeof Resource | undefined)?.responseStructure
+    const global = getGlobalResponseStructure()
+
+    return {
+      rootKey: local?.rootKey ?? collectsLocal?.rootKey ?? global?.rootKey ?? 'data',
+      factory: local?.factory ?? collectsLocal?.factory ?? global?.factory,
+    }
+  }
+
+  private getPayloadKey () {
+    const { rootKey, factory } = this.resolveResponseStructure()
+
+    return factory ? undefined : rootKey
+  }
+
   /**
    * Convert resource to JSON response format
    * 
@@ -95,10 +130,10 @@ export class GenericResource<
         delete data.pagination
       }
 
-      this.body = { data }
+      let meta: GenericBody<R>['meta']
 
-      if (Array.isArray(this.body.data) && (<any>this.resource).pagination) {
-        this.body.meta = {
+      if (Array.isArray(data) && (<any>this.resource).pagination) {
+        meta = {
           pagination: (<any>this.resource).pagination,
         }
       }
@@ -107,8 +142,20 @@ export class GenericResource<
       const caseStyle = (this.constructor as typeof GenericResource).preferredCase ?? getGlobalCase()
       if (caseStyle) {
         const transformer = getCaseTransformer(caseStyle)
-        this.body.data = transformKeys(this.body.data, transformer)
+        data = transformKeys(data, transformer)
       }
+
+      const { rootKey, factory } = this.resolveResponseStructure()
+      this.body = buildResponseEnvelope({
+        payload: data,
+        meta,
+        rootKey,
+        factory,
+        context: {
+          type: 'generic',
+          resource: this.resource,
+        },
+      }) as GenericBody<R>
     }
 
     // if (this.collects) console.log(this.body, this.constructor.name, this.collects.name)
@@ -143,8 +190,17 @@ export class GenericResource<
     this.called.additional = true
     this.json()
 
+    const extraData = extra.data
+
     delete extra.data
     delete extra.pagination
+
+    const payloadKey = this.getPayloadKey()
+    if (extraData && payloadKey && typeof this.body[payloadKey] !== 'undefined') {
+      this.body[payloadKey] = Array.isArray(this.body[payloadKey])
+        ? [...this.body[payloadKey], ...extraData]
+        : { ...this.body[payloadKey], ...extraData }
+    }
 
     this.body = {
       ...this.body,

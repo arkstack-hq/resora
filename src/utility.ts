@@ -1,4 +1,4 @@
-import { CaseStyle, Config } from './types'
+import { CaseStyle, Config, ResponseFactory, ResponseFactoryContext, ResponseStructureConfig } from './types'
 
 import { existsSync } from 'fs'
 import path from 'path'
@@ -7,6 +7,7 @@ import path from 'path'
  * Global preferred case style applied to all resources that don't specify their own.
  */
 let globalPreferredCase: CaseStyle | undefined
+let globalResponseStructure: ResponseStructureConfig | undefined
 
 /**
  * Set the global preferred case style for all resources.
@@ -22,6 +23,92 @@ export const setGlobalCase = (style: CaseStyle | undefined): void => {
  */
 export const getGlobalCase = (): CaseStyle | undefined => {
     return globalPreferredCase
+}
+
+/**
+ * Set global response structure options.
+ *
+ * @param config  Response structure options
+ */
+export const setGlobalResponseStructure = (config: ResponseStructureConfig | undefined): void => {
+    globalResponseStructure = config
+}
+
+/**
+ * Get global response structure options.
+ */
+export const getGlobalResponseStructure = (): ResponseStructureConfig | undefined => {
+    return globalResponseStructure
+}
+
+/**
+ * Set a global response root key.
+ *
+ * @param rootKey  Key used to wrap payloads
+ */
+export const setGlobalResponseRootKey = (rootKey: string | undefined): void => {
+    globalResponseStructure = {
+        ...(globalResponseStructure || {}),
+        rootKey,
+    }
+}
+
+/**
+ * Get the global response root key.
+ */
+export const getGlobalResponseRootKey = (): string | undefined => {
+    return globalResponseStructure?.rootKey
+}
+
+/**
+ * Set a global response factory.
+ *
+ * @param factory  Function that builds the final response body
+ */
+export const setGlobalResponseFactory = (factory: ResponseFactory | undefined): void => {
+    globalResponseStructure = {
+        ...(globalResponseStructure || {}),
+        factory,
+    }
+}
+
+/**
+ * Get the global response factory.
+ */
+export const getGlobalResponseFactory = (): ResponseFactory | undefined => {
+    return globalResponseStructure?.factory
+}
+
+/**
+ * Build a response envelope from payload/meta and optional custom factory.
+ */
+export const buildResponseEnvelope = ({
+    payload,
+    meta,
+    rootKey = 'data',
+    factory,
+    context,
+}: {
+    payload: any
+    meta?: Record<string, any> | undefined
+    rootKey?: string
+    factory?: ResponseFactory | undefined
+    context: Omit<ResponseFactoryContext, 'rootKey' | 'meta'>
+}): Record<string, any> => {
+    if (factory) {
+        return factory(payload, {
+            ...context,
+            rootKey,
+            meta,
+        })
+    }
+
+    const body: Record<string, any> = { [rootKey]: payload }
+    if (typeof meta !== 'undefined') {
+        body.meta = meta
+    }
+
+    return body
 }
 
 /**
@@ -127,6 +214,9 @@ export const getDefaultConfig = (): Config => {
     return {
         stubsDir,
         preferredCase: 'camel',
+        responseStructure: {
+            rootKey: 'data',
+        },
         paginatedExtras: ['meta', 'links'],
         paginatedLinks: {
             first: 'first',

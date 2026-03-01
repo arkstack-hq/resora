@@ -6,6 +6,41 @@ import type { Command } from '@h3ravel/musket'
  */
 export type CaseStyle = 'camel' | 'snake' | 'pascal' | 'kebab' | ((key: string) => string)
 
+/**
+ * @description A type representing the resource serializer variant.
+ */
+export type ResponseKind = 'resource' | 'collection' | 'generic'
+
+/**
+ * @description Context passed into a response factory function.
+ */
+export interface ResponseFactoryContext {
+    type: ResponseKind
+    rootKey: string
+    resource: any
+    meta?: MetaData | undefined
+}
+
+/**
+ * @description A factory used to produce a fully custom response envelope.
+ */
+export type ResponseFactory = (payload: any, context: ResponseFactoryContext) => ResourceData
+
+/**
+ * @description Structure options for customizing the response envelope.
+ */
+export interface ResponseStructureConfig {
+    /**
+     * @description The key used to wrap resource payloads. Defaults to "data".
+     */
+    rootKey?: string | undefined
+
+    /**
+     * @description A factory for complete control over the final response structure.
+     */
+    factory?: ResponseFactory | undefined
+}
+
 export interface MetaData {
     [key: string]: any;
 }
@@ -240,6 +275,12 @@ export interface Config {
         last_page?: string | undefined
         current_page?: string | undefined
     }
+
+    /**
+     * @description This option allows you to customize the default JSON response envelope.
+     * You can rename the root key or provide a custom factory to build the full response body.
+     */
+    responseStructure: ResponseStructureConfig
 
     /**
      * @description This option allows you to specify additional commands that should be registered with the CLI application. You can provide an array of command classes that extend the Command class from the @h3ravel/musket package. These commands will be available for use in the CLI application alongside the base commands provided by the package.

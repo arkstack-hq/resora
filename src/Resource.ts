@@ -1,9 +1,22 @@
 import type { H3Event } from 'h3'
-import { CaseStyle, Collectible, NonCollectible, ResourceBody, ResourceData } from 'src/types'
+import {
+  CaseStyle,
+  Collectible,
+  NonCollectible,
+  ResourceBody,
+  ResourceData,
+  ResponseStructureConfig,
+} from 'src/types'
 import { ServerResponse } from './ServerResponse'
 import type { Response } from 'express'
 import { ResourceCollection } from './ResourceCollection'
-import { getCaseTransformer, getGlobalCase, transformKeys } from './utility'
+import {
+  buildResponseEnvelope,
+  getCaseTransformer,
+  getGlobalCase,
+  getGlobalResponseStructure,
+  transformKeys,
+} from './utility'
 
 /**
  * Resource class to handle API resource transformation and response building
@@ -18,6 +31,11 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> {
    * Set on a subclass to override the global default.
    */
   static preferredCase?: CaseStyle
+
+  /**
+   * Response structure override for this resource class.
+   */
+  static responseStructure?: ResponseStructureConfig
 
   private called: {
     json?: boolean
@@ -78,6 +96,21 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> {
     return this.toArray()
   }
 
+  private resolveResponseStructure () {
+    const local = (this.constructor as typeof Resource).responseStructure
+    const global = getGlobalResponseStructure()
+
+    return {
+      rootKey: local?.rootKey ?? global?.rootKey ?? 'data',
+      factory: local?.factory ?? global?.factory,
+    }
+  }
+
+  private getPayloadKey () {
+    const { rootKey, factory } = this.resolveResponseStructure()
+    return factory ? undefined : rootKey
+  }
+
   /**
    * Convert resource to JSON response format
    * 
@@ -95,14 +128,23 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> {
         data = data.data
       }
 
-      this.body = { data }
-
       // Apply case transformation if configured
       const caseStyle = (this.constructor as typeof Resource).preferredCase ?? getGlobalCase()
       if (caseStyle) {
         const transformer = getCaseTransformer(caseStyle)
-        this.body.data = transformKeys(this.body.data, transformer)
+        data = transformKeys(data, transformer)
       }
+
+      const { rootKey, factory } = this.resolveResponseStructure()
+      this.body = buildResponseEnvelope({
+        payload: data,
+        rootKey,
+        factory,
+        context: {
+          type: 'resource',
+          resource: this.resource,
+        },
+      }) as ResourceBody<R>
     }
 
     return this
@@ -136,10 +178,12 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> {
     this.called.additional = true
     this.json()
 
-    if (extra.data) {
-      this.body.data = Array.isArray(this.body.data)
-        ? [...this.body.data, ...extra.data]
-        : { ...this.body.data, ...extra.data }
+    const payloadKey = this.getPayloadKey()
+
+    if (extra.data && payloadKey && typeof this.body[payloadKey] !== 'undefined') {
+      this.body[payloadKey] = Array.isArray(this.body[payloadKey])
+        ? [...this.body[payloadKey], ...extra.data]
+        : { ...this.body[payloadKey], ...extra.data }
     }
 
     this.body = {
