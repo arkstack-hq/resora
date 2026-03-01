@@ -37,6 +37,7 @@ export default defineConfig({
           { text: 'Collections', link: '/guide/collections' },
           { text: 'Server Response', link: '/guide/server-response' },
           { text: 'Writing Resources', link: '/guide/writing-resources' },
+          { text: 'Conditional Rendering', link: '/guide/conditional-attributes' },
           { text: 'Generating Resources', link: '/guide/generating-resources' },
           { text: 'Configuration', link: '/guide/configuration' },
           { text: 'Pagination & Cursor Recipes', link: '/guide/pagination-cursor-recipes' },

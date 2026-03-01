@@ -93,6 +93,8 @@ Key point:
 
 Use conditional helpers to keep `data()` declarative without verbose `if` blocks.
 
+For complete usage patterns and examples, see [Conditional Rendering](./conditional-attributes.md).
+
 - `this.when(condition, value | () => value)`
 - `this.whenNotNull(value)`
 - `this.mergeWhen(condition, object | () => object)`
