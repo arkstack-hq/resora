@@ -1,8 +1,11 @@
 import { Collectible, ResourceData } from 'src/types'
-import { describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { rename, unlink, writeFile } from 'fs/promises'
 
 import { Resource } from 'src'
 import { ResourceCollection } from 'src/ResourceCollection'
+import { existsSync } from 'fs'
+import path from 'path'
 
 describe('Core', () => {
     it('should create a Resource instance', () => {
@@ -261,4 +264,49 @@ describe('Extending Collections', () => {
             meta: 'test',
         })
     })
-}) 
+})
+
+describe('Configuration', () => {
+    const configPath = path.resolve(process.cwd(), 'resora.config.ts')
+    const backupPath = path.resolve(process.cwd(), 'resora.config.ts.bkp')
+
+    beforeAll(async () => {
+        const configContent = `
+            import { defineConfig } from './src/utility'
+
+            export default defineConfig({
+                resourcesDir: 'custom/resources',
+                stubs: {
+                    resource: 'custom-resource.stub',
+                },
+            })
+        `
+        // Backup the original config file to resora.config.ts.bkp if it exists
+        if (existsSync(configPath)) {
+            await rename(configPath, backupPath)
+        }
+
+        await writeFile(configPath, configContent)
+    })
+
+    afterAll(async () => {
+        await unlink(configPath)
+        if (existsSync(backupPath)) {
+            await rename(backupPath, configPath)
+        }
+    })
+
+    it('should allow defining custom configuration', async () => {
+        const customConfig = {
+            resourcesDir: 'custom/resources',
+            stubs: {
+                resource: 'custom-resource.stub',
+            },
+        }
+
+        const config = await import(path.resolve(process.cwd(), 'resora.config.ts')).then(mod => mod.default)
+
+        expect(config.resourcesDir).toBe(customConfig.resourcesDir)
+        expect(config.stubs.resource).toBe(customConfig.stubs.resource)
+    })
+})

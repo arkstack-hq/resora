@@ -1,3 +1,11 @@
+import type { Command } from '@h3ravel/musket'
+
+/**
+ * @description A type representing a case transformation strategy.
+ * Can be a preset string ('camel', 'snake', 'pascal', 'kebab') or a custom transformer function.
+ */
+export type CaseStyle = 'camel' | 'snake' | 'pascal' | 'kebab' | ((key: string) => string)
+
 export interface MetaData {
     [key: string]: any;
 }
@@ -197,8 +205,9 @@ export interface Config {
 
     /**
      * @description This option allows you to specify the case style that should be used for the keys in API responses returned by the resources.
+     * Accepts 'camel', 'snake', 'pascal', 'kebab', or a custom transformer function `(key: string) => string`.
      */
-    preferredCase: 'camel' | 'snake' | 'pascal' | 'kebab'
+    preferredCase: CaseStyle
 
     /**
      * @description This option allows you to specify the extra properties that should be included in the response body when a resource is paginated. You can choose to include either 'meta', 'links', or both, or you can provide custom property names for these extras.
@@ -231,4 +240,9 @@ export interface Config {
         last_page?: string | undefined
         current_page?: string | undefined
     }
+
+    /**
+     * @description This option allows you to specify additional commands that should be registered with the CLI application. You can provide an array of command classes that extend the Command class from the @h3ravel/musket package. These commands will be available for use in the CLI application alongside the base commands provided by the package.
+     */
+    extraCommands?: typeof Command<any>[]
 }

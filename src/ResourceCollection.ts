@@ -1,8 +1,9 @@
 import type { H3Event } from 'h3'
-import { ResourceData, Collectible, CollectionBody } from 'src/types'
+import { CaseStyle, ResourceData, Collectible, CollectionBody } from 'src/types'
 import { ServerResponse } from './ServerResponse'
 import type { Response } from 'express'
 import { Resource } from './Resource'
+import { getCaseTransformer, getGlobalCase, transformKeys } from './utility'
 
 /**
  * ResourceCollection class to handle API resource transformation and response building for collections
@@ -12,6 +13,13 @@ export class ResourceCollection<R extends ResourceData[] | Collectible = Resourc
   public body: CollectionBody<R> = { data: [] as any }
   public resource: R
   public collects?: typeof Resource<T>
+
+  /**
+   * Preferred case style for this collection's output keys.
+   * Set on a subclass to override the global default.
+   */
+  static preferredCase?: CaseStyle
+
   private called: {
     json?: boolean
     data?: boolean
@@ -62,6 +70,15 @@ export class ResourceCollection<R extends ResourceData[] | Collectible = Resourc
           this.body.meta = { pagination: this.resource.pagination } as CollectionBody<R>['meta']
         else if (this.resource.cursor)
           this.body.meta = { cursor: this.resource.cursor } as CollectionBody<R>['meta']
+      }
+
+      // Apply case transformation if configured
+      const caseStyle = (this.constructor as typeof ResourceCollection).preferredCase
+        ?? (this.collects as typeof Resource | undefined)?.preferredCase
+        ?? getGlobalCase()
+      if (caseStyle) {
+        const transformer = getCaseTransformer(caseStyle)
+        this.body.data = transformKeys(this.body.data, transformer) as CollectionBody<R>['data']
       }
     }
 
@@ -115,8 +132,8 @@ export class ResourceCollection<R extends ResourceData[] | Collectible = Resourc
 
   setCollects (collects: typeof Resource<T>) {
     this.collects = collects
-    
-return this
+
+    return this
   }
 
   /**

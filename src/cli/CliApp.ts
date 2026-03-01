@@ -39,6 +39,14 @@ export class CliApp {
     }
 
     /**
+     * Get the current configuration object
+     * @returns 
+     */
+    getConfig () {
+        return this.config
+    }
+
+    /**
      * Initialize Resora by creating a default config file in the current directory
      * 
      * @returns 

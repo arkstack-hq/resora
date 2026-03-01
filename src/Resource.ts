@@ -1,8 +1,9 @@
 import type { H3Event } from 'h3'
-import { Collectible, NonCollectible, ResourceBody, ResourceData } from 'src/types'
+import { CaseStyle, Collectible, NonCollectible, ResourceBody, ResourceData } from 'src/types'
 import { ServerResponse } from './ServerResponse'
 import type { Response } from 'express'
 import { ResourceCollection } from './ResourceCollection'
+import { getCaseTransformer, getGlobalCase, transformKeys } from './utility'
 
 /**
  * Resource class to handle API resource transformation and response building
@@ -11,6 +12,13 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> {
   [key: string]: any;
   public body: ResourceBody<R> = { data: {} as any }
   public resource: R
+
+  /**
+   * Preferred case style for this resource's output keys.
+   * Set on a subclass to override the global default.
+   */
+  static preferredCase?: CaseStyle
+
   private called: {
     json?: boolean
     data?: boolean
@@ -88,6 +96,13 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> {
       }
 
       this.body = { data }
+
+      // Apply case transformation if configured
+      const caseStyle = (this.constructor as typeof Resource).preferredCase ?? getGlobalCase()
+      if (caseStyle) {
+        const transformer = getCaseTransformer(caseStyle)
+        this.body.data = transformKeys(this.body.data, transformer)
+      }
     }
 
     return this

@@ -1,8 +1,9 @@
 import type { H3Event } from 'h3'
-import { Collectible, GenericBody, NonCollectible, ResourceData } from 'src/types'
+import { CaseStyle, Collectible, GenericBody, NonCollectible, ResourceData } from 'src/types'
 import { ServerResponse } from './ServerResponse'
 import type { Response } from 'express'
 import { Resource } from './Resource'
+import { getCaseTransformer, getGlobalCase, transformKeys } from './utility'
 
 /**
  * GenericResource class to handle API resource transformation and response building
@@ -15,6 +16,13 @@ export class GenericResource<
   public body: GenericBody<R> = { data: {} as any }
   public resource: R
   public collects?: typeof Resource<T>
+
+  /**
+   * Preferred case style for this resource's output keys.
+   * Set on a subclass to override the global default.
+   */
+  static preferredCase?: CaseStyle
+
   private called: {
     json?: boolean
     data?: boolean
@@ -93,6 +101,13 @@ export class GenericResource<
         this.body.meta = {
           pagination: (<any>this.resource).pagination,
         }
+      }
+
+      // Apply case transformation if configured
+      const caseStyle = (this.constructor as typeof GenericResource).preferredCase ?? getGlobalCase()
+      if (caseStyle) {
+        const transformer = getCaseTransformer(caseStyle)
+        this.body.data = transformKeys(this.body.data, transformer)
       }
     }
 
