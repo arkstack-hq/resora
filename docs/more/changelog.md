@@ -4,7 +4,7 @@ All notable changes to Resora will be documented in this file.
 
 The format follows semantic versioning principles.
 
-## [Unreleased]
+## [Unreleased] - Upcoming features and changes that are currently in development or planned for the next release.
 
 ### Planned
 
@@ -13,8 +13,16 @@ The format follows semantic versioning principles.
 
 ## [0.2.0] - Major Release
 
+### Changed
+
+- Refactored internals by splitting monolithic `types.ts` and `utility.ts` concerns into dedicated modules under `src/types/*` and `src/utilities/*`.
+- Updated tests and examples to use `.getBody()` instead of direct `.json().body` access.
+- Serializer `body` state is now private in core resource classes.
+
 ### Added
 
+- Added `getBody()` to `Resource`, `ResourceCollection`, and `GenericResource` as the standard way to retrieve serialized output.
+- Added protected `setBody()` helper for controlled body mutation inside custom class hooks (for example `withResponse()`).
 - Case customization strategies with global and per-class support (`camel`, `snake`, `pascal`, `kebab`, and custom transformers).
 - Custom response structure configuration via `responseStructure` with custom root key and full response factory support.
 - Metadata customization APIs:
@@ -34,6 +42,9 @@ The format follows semantic versioning principles.
 
 ### Documentation
 
+- Added dedicated guide for non-Connect frameworks: `Using Resora Outside H3/Express (Non-Connect Frameworks)`.
+- Added cross-links from `Server Response` and `Getting Started` to the non-Connect usage guide.
+- Updated guide examples to use `.getBody()` and `setBody()` patterns.
 - Added configuration docs for `preferredCase` and `responseStructure` with examples.
 - Added writing guide coverage for `withResponse()` and hook context (`withResponseContext`).
 - Added cross-links in resources and collections guides for case, envelope, metadata, and outgoing response customization.
