@@ -1,6 +1,6 @@
 {
   "name": "resora",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "A structured API response layer for Node.js and TypeScript with automatic JSON responses, collection support, and pagination handling.",
   "keywords": [
     "api",
@@ -14,13 +14,13 @@
     "json",
     "response"
   ],
-  "homepage": "https://toneflix.github.io/resora",
+  "homepage": "https://arcstack-hq.github.io/resora",
   "bugs": {
-    "url": "https://github.com/toneflix/resora/issues"
+    "url": "https://github.com/arcstack-hq/resora/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/toneflix/resora.git"
+    "url": "git+https://github.com/arcstack-hq/resora.git"
   },
   "license": "MIT",
   "author": "3m1n1nce <3m1n1nce@toneflix.net>",

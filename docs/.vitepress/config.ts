@@ -15,7 +15,7 @@ export default defineConfig({
     ['meta', { property: 'og:title', content: 'Resora' }],
     ['meta', { property: 'og:description', content: 'A structured API response layer for Node.js and TypeScript with automatic JSON responses, collection support, and pagination handling' }],
     ['meta', { property: 'og:image', content: '/banner.png' }],
-    ['meta', { property: 'og:url', content: 'https://toneflix.github.io/resora/' }],
+    ['meta', { property: 'og:url', content: 'https://arcstack-hq.github.io/resora/' }],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
     ['meta', { name: 'twitter:title', content: 'Resora' }],
     ['meta', { name: 'twitter:description', content: 'A structured API response layer for Node.js and TypeScript with automatic JSON responses, collection support, and pagination handling' }],
@@ -61,7 +61,7 @@ export default defineConfig({
     ],
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/toneflix/resora' }
+      { icon: 'github', link: 'https://github.com/arcstack-hq/resora' }
     ]
   }
 })
