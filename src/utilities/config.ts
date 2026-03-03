@@ -1,6 +1,7 @@
+import { Config, ResoraConfig } from '../types'
+
 import { existsSync } from 'fs'
 import path from 'path'
-import { Config } from '../types'
 
 let stubsDir = path.resolve(process.cwd(), 'node_modules/resora/stubs')
 if (!existsSync(stubsDir)) {
@@ -47,16 +48,32 @@ export const getDefaultConfig = (): Config => {
     }
 }
 
-export const defineConfig = (
-    userConfig: Partial<Omit<Config, 'stubs'>> & { stubs?: Partial<Config['stubs']> } = {}
-): Config => {
-    const defaultConfig = getDefaultConfig()
+/**
+ * Defines the configuration for the application by merging the provided configuration with the default configuration. This function takes a partial configuration object as input and returns a complete configuration object that includes all required properties, using default values for any properties that are not specified in the input.
+ * 
+ * @param config 
+ * @returns 
+ */
+export const defineConfig = (config: ResoraConfig): Config => {
+    const defConf = getDefaultConfig()
 
     return Object.assign(
-        defaultConfig,
-        userConfig,
+        defConf,
+        config,
         {
-            stubs: Object.assign(defaultConfig.stubs, userConfig.stubs || {}),
-        }
+            stubs: Object.assign(defConf.stubs, config.stubs || {}),
+        },
+        {
+            cursorMeta: Object.assign(defConf.cursorMeta, config.cursorMeta || {}),
+        },
+        {
+            paginatedMeta: Object.assign(defConf.paginatedMeta, config.paginatedMeta || {}),
+        },
+        {
+            paginatedLinks: Object.assign(defConf.paginatedLinks, config.paginatedLinks || {}),
+        },
+        {
+            responseStructure: Object.assign(defConf.responseStructure, config.responseStructure || {})
+        },
     )
 }

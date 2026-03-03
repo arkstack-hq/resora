@@ -1,6 +1,13 @@
 import { ResponseFactory, ResponseFactoryContext } from '../types'
+
 import { isPlainObject } from './objects'
 
+/**
+ * Builds a response envelope based on the provided payload, 
+ * metadata, and configuration options.
+ * 
+ * @param config The configuration object containing payload, metadata, and other options for building the response.
+ */
 export const buildResponseEnvelope = ({
     payload,
     meta,

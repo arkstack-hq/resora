@@ -13,7 +13,7 @@ Allow configurable key casing strategies:
 
 This enables seamless integration with legacy APIs or strict backend standards.
 
-[x]Implemented
+✅ Implemented
 
 ## Customizing Response Structure
 
@@ -33,7 +33,7 @@ Planned support:
 - Fully custom response factory
 - Global or per-resource configuration
 
-[x]Implemented
+✅ Implemented
 
 ## Customizing and Adding Metadata
 
@@ -47,7 +47,7 @@ Support both:
 
 Allow developers to append structured meta without manual merging.
 
-[x]Implemented
+✅ Implemented
 
 ## Customizing Outgoing Response
 
@@ -60,7 +60,7 @@ This will allow on per classes bases:
 - Framework-specific integrations
 - Final response mutation before dispatch
 
-[x]Implemented
+✅ Implemented
 
 ## Data Wrapping Configuration
 
@@ -72,7 +72,7 @@ Planned:
 - Ability to rename wrapping key
 - Per-resource wrapping configuration
 
-[x]Implemented
+✅ Implemented
 
 ## Conditional Attributes
 
@@ -82,7 +82,7 @@ Add conditional transformation helpers:
 - `this.whenNotNull(value)`
 - `this.mergeWhen(condition, object | () => object)`
 
-[x]Implemented
+✅ Implemented
 
 ## NextJs API, NestJS and Fastify Support
 
@@ -94,7 +94,7 @@ Add direct support for NextJs API, NestJS, and Fastify response objects in:
 
 This will enable first-class integration without requiring custom wrappers.
 
-[ ]Implemented
+🔲 Implemented
 
 ## Plugin System
 
@@ -110,4 +110,4 @@ The plugin system will allow developers to:
 
 These utilities will enable clean, declarative conditional serialization without verbose logic inside data().
 
-[ ]Implemented
+🔲 Implemented

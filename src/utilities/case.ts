@@ -1,5 +1,12 @@
 import { CaseStyle } from '../types'
 
+/**
+ * Splits a string into words based on common delimiters and capitalization patterns.
+ * Handles camelCase, PascalCase, snake_case, kebab-case, and space-separated words.
+ * 
+ * @param str 
+ * @returns 
+ */
 export const splitWords = (str: string): string[] => {
     return str
         .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
@@ -11,6 +18,12 @@ export const splitWords = (str: string): string[] => {
         .filter(Boolean)
 }
 
+/**
+ * Transforms a string to camelCase.
+ * 
+ * @param str 
+ * @returns 
+ */
 export const toCamelCase = (str: string): string => {
     const words = splitWords(str)
 
@@ -19,20 +32,44 @@ export const toCamelCase = (str: string): string => {
         .join('')
 }
 
+/**
+ * Transforms a string to snake_case.
+ * 
+ * @param str 
+ * @returns 
+ */
 export const toSnakeCase = (str: string): string => {
     return splitWords(str).join('_')
 }
 
+/**
+ * Transforms a string to PascalCase.
+ * 
+ * @param str 
+ * @returns 
+ */
 export const toPascalCase = (str: string): string => {
     return splitWords(str)
         .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
         .join('')
 }
 
+/**
+ * Transforms a string to kebab-case.
+ * 
+ * @param str 
+ * @returns 
+ */
 export const toKebabCase = (str: string): string => {
     return splitWords(str).join('-')
 }
 
+/**
+ * Retrieves the appropriate case transformation function based on the provided style.
+ * 
+ * @param style 
+ * @returns 
+ */
 export const getCaseTransformer = (style: CaseStyle): ((key: string) => string) => {
     if (typeof style === 'function') return style
     switch (style) {
@@ -43,6 +80,14 @@ export const getCaseTransformer = (style: CaseStyle): ((key: string) => string) 
     }
 }
 
+/**
+ * Transforms the keys of an object (including nested objects and arrays) using 
+ * the provided transformer function.
+ * 
+ * @param obj 
+ * @param transformer 
+ * @returns 
+ */
 export const transformKeys = (obj: any, transformer: (key: string) => string): any => {
     if (obj === null || obj === undefined) return obj
     if (Array.isArray(obj)) return obj.map((item) => transformKeys(item, transformer))

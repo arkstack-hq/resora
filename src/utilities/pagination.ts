@@ -1,4 +1,3 @@
-import { Config } from '../types'
 import {
     getGlobalBaseUrl,
     getGlobalCursorMeta,
@@ -8,6 +7,13 @@ import {
     getGlobalPaginatedMeta,
 } from './state'
 
+import { Config } from '../types'
+
+/**
+ * Retrieves the configured keys for pagination extras (meta, links, cursor) based on the application's configuration.
+ * 
+ * @returns An object containing the keys for meta, links, and cursor extras, or `undefined` if not configured.
+ */
 export const getPaginationExtraKeys = (): { metaKey?: string; linksKey?: string; cursorKey?: string } => {
     const extras = getGlobalPaginatedExtras()
 
@@ -26,6 +32,13 @@ export const getPaginationExtraKeys = (): { metaKey?: string; linksKey?: string;
     }
 }
 
+/**
+ * Builds a pagination URL for a given page number and path, using the global base URL and page name configuration.
+ * 
+ * @param page The page number for which to build the URL. If `undefined`, the function will return `undefined`.
+ * @param pathName The path to use for the URL. If not provided, it will default to an empty string. 
+ * @returns 
+ */
 const buildPageUrl = (
     page: number | undefined,
     pathName: string | undefined,
@@ -58,6 +71,13 @@ const buildPageUrl = (
     return url.toString()
 }
 
+/**
+ * Builds pagination extras (meta, links, cursor) for a given resource based on 
+ * its pagination and cursor properties, using the configured keys for each type of extra.
+ * 
+ * @param resource The resource for which to build pagination extras. 
+ * @returns An object containing the pagination extras (meta, links, cursor) for the resource.
+ */
 export const buildPaginationExtras = (resource: any): Record<string, any> => {
     const { metaKey, linksKey, cursorKey } = getPaginationExtraKeys()
     const extra: Record<string, any> = {}

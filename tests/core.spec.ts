@@ -1,9 +1,5 @@
 import { Collectible, Resource, ResourceCollection, ResourceData } from 'src'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { rename, unlink, writeFile } from 'fs/promises'
-
-import { existsSync } from 'fs'
-import path from 'path'
+import { describe, expect, it } from 'vitest'
 
 describe('Core', () => {
     it('should create a Resource instance', () => {
@@ -284,50 +280,5 @@ describe('Extending Collections', () => {
             data: [{ id: 1, name: 'Test Resource', custom: 'data' }],
             meta: 'test',
         })
-    })
-})
-
-describe('Configuration', () => {
-    const configPath = path.resolve(process.cwd(), 'resora.config.ts')
-    const backupPath = path.resolve(process.cwd(), 'resora.config.ts.bkp')
-
-    beforeAll(async () => {
-        const configContent = `
-            import { defineConfig } from './src/utilities'
-
-            export default defineConfig({
-                resourcesDir: 'custom/resources',
-                stubs: {
-                    resource: 'custom-resource.stub',
-                },
-            })
-        `
-        // Backup the original config file to resora.config.ts.bkp if it exists
-        if (existsSync(configPath)) {
-            await rename(configPath, backupPath)
-        }
-
-        await writeFile(configPath, configContent)
-    })
-
-    afterAll(async () => {
-        await unlink(configPath)
-        if (existsSync(backupPath)) {
-            await rename(backupPath, configPath)
-        }
-    })
-
-    it('should allow defining custom configuration', async () => {
-        const customConfig = {
-            resourcesDir: 'custom/resources',
-            stubs: {
-                resource: 'custom-resource.stub',
-            },
-        }
-
-        const config = await import(path.resolve(process.cwd(), 'resora.config.ts')).then(mod => mod.default)
-
-        expect(config.resourcesDir).toBe(customConfig.resourcesDir)
-        expect(config.stubs.resource).toBe(customConfig.stubs.resource)
     })
 })

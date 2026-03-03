@@ -9,7 +9,24 @@ The format follows semantic versioning principles.
 ### Planned
 
 - Plugin System for lifecycle extension without core modification
-- Direct support for NextJs API, NestJS, and Fastify response objects in `withResponse()`, `.response()`, and `ServerResponse` class.
+- Direct support for Next.Js API, Nest.JS, and Fastify response objects in `withResponse()`, `.response()`, and `ServerResponse` class.
+
+## [0.2.1] - [0.2.2] - Patch Release Series
+
+### Changed
+
+- API serialization internals now support runtime configuration loading so API usage can honor `resora.config.*`, not only CLI workflows.
+- Runtime config resolution now normalizes through `defineConfig()` for consistent merge behavior across CLI and runtime paths.
+- Moved configuration-focused assertions out of core serializer tests into a dedicated `config.spec.ts` suite for clearer test boundaries.
+
+### Added
+
+- Added runtime config test reset helper to improve deterministic testing of config load/apply behavior.
+- Added dedicated configuration scenario coverage for config merging, runtime config application, and file-based runtime loading.
+
+### Documentation
+
+- Updated changelog and docs references to reflect runtime config support in API runtime scenarios.
 
 ## [0.2.0] - Major Release
 
