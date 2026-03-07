@@ -14,13 +14,13 @@
     "json",
     "response"
   ],
-  "homepage": "https://arcstack-hq.github.io/resora",
+  "homepage": "https://arkstack-hq.github.io/resora",
   "bugs": {
-    "url": "https://github.com/arcstack-hq/resora/issues"
+    "url": "https://github.com/arkstack-hq/resora/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/arcstack-hq/resora.git"
+    "url": "git+https://github.com/arkstack-hq/resora.git"
   },
   "license": "MIT",
   "author": "3m1n1nce <3m1n1nce@toneflix.net>",

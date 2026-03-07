@@ -2,9 +2,9 @@
 
 [![NPM Downloads](https://img.shields.io/npm/dt/resora.svg)](https://www.npmjs.com/package/resora)
 [![npm version](https://img.shields.io/npm/v/resora.svg)](https://www.npmjs.com/package/resora)
-[![License](https://img.shields.io/npm/l/resora.svg)](https://github.com/arcstack-hq/resora/blob/main/LICENSE)
-[![CI](https://github.com/arcstack-hq/resora/actions/workflows/ci.yml/badge.svg)](https://github.com/arcstack-hq/resora/actions/workflows/ci.yml)
-[![Deploy Docs](https://github.com/arcstack-hq/resora/actions/workflows/deploy-docs.yml/badge.svg)](https://github.com/arcstack-hq/resora/actions/workflows/deploy-docs.yml)
+[![License](https://img.shields.io/npm/l/resora.svg)](https://github.com/arkstack-hq/resora/blob/main/LICENSE)
+[![CI](https://github.com/arkstack-hq/resora/actions/workflows/ci.yml/badge.svg)](https://github.com/arkstack-hq/resora/actions/workflows/ci.yml)
+[![Deploy Docs](https://github.com/arkstack-hq/resora/actions/workflows/deploy-docs.yml/badge.svg)](https://github.com/arkstack-hq/resora/actions/workflows/deploy-docs.yml)
 
 Resora is a structured API response layer for Node.js and TypeScript backends.
 
@@ -207,10 +207,10 @@ It is intentionally not opinionated about routing, validation, or persistence.
 
 ## Documentation
 
-- Getting Started: https://arcstack-hq.github.io/resora/guide/getting-started
-- Configuration: https://arcstack-hq.github.io/resora/guide/configuration
-- Conditional Rendering: https://arcstack-hq.github.io/resora/guide/conditional-attributes
-- Pagination & Cursor Recipes: https://arcstack-hq.github.io/resora/guide/pagination-cursor-recipes
+- Getting Started: https://arkstack-hq.github.io/resora/guide/getting-started
+- Configuration: https://arkstack-hq.github.io/resora/guide/configuration
+- Conditional Rendering: https://arkstack-hq.github.io/resora/guide/conditional-attributes
+- Pagination & Cursor Recipes: https://arkstack-hq.github.io/resora/guide/pagination-cursor-recipes
 
 ---
 
