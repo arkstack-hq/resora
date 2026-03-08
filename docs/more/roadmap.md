@@ -96,6 +96,16 @@ This will enable first-class integration without requiring custom wrappers.
 
 🔲 Implemented
 
+## Built in support for Arkormˣ
+
+Provide built-in support for Arkormˣ models, allowing seamless transformation of Arkormˣ entities without manual mapping.
+
+- Automatic detection of Arkormˣ models in resource classes
+- Direct transformation of Arkormˣ entities to JSON responses
+- Support for Arkormˣ relationships and eager loading in transformations
+
+✅ Implemented
+
 ## Plugin System
 
 Introduce a first-class plugin architecture to extend Resora without modifying core behavior.

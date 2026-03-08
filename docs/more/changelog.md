@@ -10,6 +10,7 @@ The format follows semantic versioning principles.
 
 - Plugin System for lifecycle extension without core modification
 - Direct support for Next.Js API, Nest.JS, and Fastify response objects in `withResponse()`, `.response()`, and `ServerResponse` class.
+- Built-in support for Arkormˣ models for seamless transformation of Arkormˣ entities.
 
 ## [0.2.1] - [0.2.2] - Patch Release Series
 

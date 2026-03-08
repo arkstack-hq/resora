@@ -64,6 +64,7 @@
     "@types/node": "^20.10.6",
     "@types/supertest": "^6.0.3",
     "@vitest/coverage-v8": "4.0.18",
+    "arkormx": "file:../arkorm",
     "barrelize": "^1.7.3",
     "eslint": "^10.0.0",
     "express": "^5.1.0",

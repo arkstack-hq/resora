@@ -1,6 +1,7 @@
 import type { H3Event } from 'h3'
 import {
   CaseStyle,
+  CollectionLike,
   Collectible,
   GenericBody,
   MetaData,
@@ -19,7 +20,10 @@ import {
   getGlobalCase,
   getGlobalResponseStructure,
   getPaginationExtraKeys,
+  isArkormLikeCollection,
+  isArkormLikeModel,
   mergeMetadata,
+  normalizeSerializableData,
   resolveMergeWhen,
   resolveWhen,
   resolveWhenNotNull,
@@ -32,7 +36,7 @@ import {
  * GenericResource class to handle API resource transformation and response building
  */
 export class GenericResource<
-  R extends NonCollectible | Collectible | ResourceData = ResourceData,
+  R extends NonCollectible | Collectible | CollectionLike | ResourceData = ResourceData,
   T extends ResourceData = any
 > {
   [key: string]: any;
@@ -71,25 +75,59 @@ export class GenericResource<
   constructor(rsc: R, private res?: Response) {
     this.resource = rsc
 
+    const hasDataPayload = !!this.resource
+      && typeof this.resource === 'object'
+      && 'data' in (this.resource as Record<string, unknown>)
+
+    const dataPayload = hasDataPayload
+      ? (this.resource as NonCollectible | Collectible).data
+      : undefined
+
+    const hasObjectDataPayload = !!dataPayload && !Array.isArray(dataPayload)
+
+    const source = hasDataPayload
+      ? dataPayload
+      : this.resource
+
     /**
      * Copy properties from rsc to this instance for easy 
      * access, but only if data is not an array
      */
-    if (!Array.isArray(this.resource.data ?? this.resource)) {
-      for (const key of Object.keys(this.resource.data ?? this.resource)) {
+    if (source && typeof source === 'object' && !Array.isArray(source) && !isArkormLikeCollection(source)) {
+      const sourceKeys = isArkormLikeModel(source)
+        ? Object.keys(source.toObject())
+        : Object.keys(source)
+
+      for (const key of sourceKeys) {
         if (!(key in this)) {
           Object.defineProperty(this, key, {
             enumerable: true,
             configurable: true,
             get: () => {
-              return this.resource.data?.[key] ?? (<any>this.resource)[key]
+              if (isArkormLikeModel(source) && typeof source.getAttribute === 'function') {
+                return source.getAttribute(key)
+              }
+
+              if (hasObjectDataPayload) {
+                return (dataPayload as ResourceData)[key]
+              }
+
+              return (<any>this.resource)[key]
             },
             set: (value) => {
-              if ((<any>this.resource).data && this.resource.data[key]) {
-                this.resource.data[key] = value
-              } else {
-                (<any>this.resource)[key] = value
+              if (isArkormLikeModel(source) && typeof source.setAttribute === 'function') {
+                source.setAttribute(key, value)
+
+                return
               }
+
+              if (hasObjectDataPayload) {
+                (dataPayload as ResourceData)[key] = value
+
+                return
+              }
+
+              (<any>this.resource)[key] = value
             },
           })
         }
@@ -172,14 +210,13 @@ export class GenericResource<
 
       const resource = this.data()
 
-      let data: any = Array.isArray(resource) ? [...resource] : { ...resource }
+      let data: any = normalizeSerializableData(resource)
 
       if (Array.isArray(data) && this.collects) {
         data = data.map(item => new this.collects!(item).data())
-        this.resource = data
       }
 
-      if (typeof data.data !== 'undefined') {
+      if (!Array.isArray(data) && data && typeof data.data !== 'undefined') {
         data = data.data
       }
 
@@ -278,9 +315,9 @@ export class GenericResource<
     this.called.toArray = true
     this.json()
 
-    let data: any = Array.isArray(this.resource) ? [...this.resource] : { ...this.resource }
+    let data: any = normalizeSerializableData(this.resource)
 
-    if (typeof data.data !== 'undefined') {
+    if (!Array.isArray(data) && data && typeof data.data !== 'undefined') {
       data = data.data
     }
 

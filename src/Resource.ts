@@ -1,6 +1,7 @@
 import type { H3Event } from 'h3'
 import {
   CaseStyle,
+  CollectionLike,
   Collectible,
   MetaData,
   NonCollectible,
@@ -17,7 +18,9 @@ import {
   getCaseTransformer,
   getGlobalCase,
   getGlobalResponseStructure,
+  isArkormLikeModel,
   mergeMetadata,
+  normalizeSerializableData,
   resolveMergeWhen,
   resolveWhen,
   resolveWhenNotNull,
@@ -65,20 +68,36 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> {
   constructor(rsc: R, private res?: Response) {
     this.resource = rsc
 
+    const source = this.resource.data ?? this.resource
+
     /**
      * Copy properties from rsc to this instance for easy 
      * access, but only if data is not an array
      */
-    if (!Array.isArray(this.resource.data ?? this.resource)) {
-      for (const key of Object.keys(this.resource.data ?? this.resource)) {
+    if (!Array.isArray(source)) {
+      const sourceKeys = isArkormLikeModel(source)
+        ? Object.keys(source.toObject())
+        : Object.keys(source)
+
+      for (const key of sourceKeys) {
         if (!(key in this)) {
           Object.defineProperty(this, key, {
             enumerable: true,
             configurable: true,
             get: () => {
+              if (isArkormLikeModel(source) && typeof source.getAttribute === 'function') {
+                return source.getAttribute(key)
+              }
+
               return this.resource.data?.[key] ?? (<any>this.resource)[key]
             },
             set: (value) => {
+              if (isArkormLikeModel(source) && typeof source.setAttribute === 'function') {
+                source.setAttribute(key, value)
+
+                return
+              }
+
               if ((<any>this.resource).data && this.resource.data[key]) {
                 this.resource.data[key] = value
               } else {
@@ -98,7 +117,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> {
    * @returns 
    */
   static collection<
-    C extends ResourceData[] | Collectible = ResourceData[],
+    C extends ResourceData[] | Collectible | CollectionLike = ResourceData[],
     T extends ResourceData = any
   > (data: C) {
     return new ResourceCollection<C, T>(data).setCollects(this)
@@ -178,9 +197,9 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> {
 
       const resource = this.data()
 
-      let data: any = Array.isArray(resource) ? [...resource] : { ...resource }
+      let data: any = normalizeSerializableData(resource)
 
-      if (typeof data.data !== 'undefined') {
+      if (!Array.isArray(data) && data && typeof data.data !== 'undefined') {
         data = data.data
       }
 
@@ -262,9 +281,9 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> {
     this.called.toArray = true
     this.json()
 
-    let data = Array.isArray(this.resource) ? [...this.resource] : { ...this.resource }
+    let data = normalizeSerializableData(this.resource) as any
 
-    if (!Array.isArray(data) && typeof data.data !== 'undefined') {
+    if (!Array.isArray(data) && data && typeof data.data !== 'undefined') {
       data = data.data
     }
 

@@ -65,6 +65,54 @@ Produces:
 }
 ```
 
+## Arkormˣ Models
+
+Resora detects Arkormˣ model instances automatically and serializes them through the model's `toObject()` output.
+
+```ts
+import { Resource } from 'resora';
+
+const user = await User.query().findOrFail(1);
+
+const body = new Resource(user).getBody();
+```
+
+Result:
+
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "Jane Doe"
+  }
+}
+```
+
+Eager-loaded Arkormˣ relationships are also serialized recursively:
+
+```ts
+const user = await User.query().with(['profile', 'posts']).findOrFail(1);
+
+const body = new Resource(user).getBody();
+```
+
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "Jane Doe",
+    "profile": {
+      "id": 10,
+      "bio": "Creator"
+    },
+    "posts": [
+      { "id": 100, "title": "First" },
+      { "id": 101, "title": "Second" }
+    ]
+  }
+}
+```
+
 ## Adding Additional Data
 
 You may attach extra top-level fields:

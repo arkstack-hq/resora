@@ -1,6 +1,7 @@
 import type { H3Event } from 'h3'
 import {
   CaseStyle,
+  CollectionLike,
   ResourceData,
   Collectible,
   CollectionBody,
@@ -18,7 +19,9 @@ import {
   getGlobalCase,
   getGlobalResponseStructure,
   getPaginationExtraKeys,
+  isArkormLikeCollection,
   mergeMetadata,
+  normalizeSerializableData,
   resolveMergeWhen,
   resolveWhen,
   resolveWhenNotNull,
@@ -30,7 +33,7 @@ import {
 /**
  * ResourceCollection class to handle API resource transformation and response building for collections
  */
-export class ResourceCollection<R extends ResourceData[] | Collectible = ResourceData[], T extends ResourceData = any> {
+export class ResourceCollection<R extends ResourceData[] | Collectible | CollectionLike = ResourceData[], T extends ResourceData = any> {
   [key: string]: any;
   private body: CollectionBody<R> = { data: [] as any }
   public resource: R
@@ -39,6 +42,14 @@ export class ResourceCollection<R extends ResourceData[] | Collectible = Resourc
   protected withResponseContext?: {
     response: ServerResponse<CollectionBody<R>>
     raw: Response | H3Event['res']
+  }
+
+  private isPaginatedCollectible (value: unknown): value is Collectible {
+    if (!value || typeof value !== 'object') {
+      return false
+    }
+
+    return Array.isArray((value as Collectible).data)
   }
 
   /**
@@ -149,9 +160,11 @@ export class ResourceCollection<R extends ResourceData[] | Collectible = Resourc
         data = data.map((item: any) => new this.collects!(item).data())
       }
 
+      data = normalizeSerializableData(data) as ResourceData[]
+
       data = sanitizeConditionalAttributes(data) as ResourceData[]
 
-      const paginationExtras = !Array.isArray(this.resource)
+      const paginationExtras = this.isPaginatedCollectible(this.resource)
         ? buildPaginationExtras(this.resource)
         : {}
 
@@ -244,11 +257,25 @@ export class ResourceCollection<R extends ResourceData[] | Collectible = Resourc
    *
    * @returns
    */
-  toArray (): (R extends Collectible ? R['data'][number] : R extends ResourceData[] ? R[number] : never)[] {
+  toArray (): (
+    R extends Collectible
+      ? R['data'][number]
+      : R extends CollectionLike<infer TCollectionData>
+        ? TCollectionData
+        : R extends ResourceData[]
+          ? R[number]
+          : never
+  )[] {
     this.called.toArray = true
     this.json()
 
-    return Array.isArray(this.resource) ? [...this.resource] : [...this.resource.data as never[]]
+    const source = Array.isArray(this.resource)
+      ? this.resource
+      : isArkormLikeCollection(this.resource)
+        ? this.resource.all()
+        : this.resource.data as never[]
+
+    return normalizeSerializableData(source) as never
   }
 
   /**

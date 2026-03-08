@@ -88,6 +88,7 @@ Output:
 Key point:
 
 - `this.id` and `this.name` are accessible because the base class proxies properties from the original resource.
+- Arkormˣ models are supported out of the box. See [Resources - Arkormˣ Models](./resources.md#arkorm-models).
 
 ## Conditional Attributes
 
