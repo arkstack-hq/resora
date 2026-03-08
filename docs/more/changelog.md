@@ -6,6 +6,17 @@ The format follows semantic versioning principles.
 
 ## [Unreleased] - Upcoming features and changes that are currently in development or planned for the next release.
 
+### Added
+
+- Added direct support for Arkormˣ paginated results (`LengthAwarePaginator` and `Paginator`) across `ResourceCollection` and `GenericResource` flows.
+
+- Added direct support for Arkormˣ Models and Collections across `ResourceCollection` and `GenericResource` flows.
+
+### Documentation
+
+- Added Arkormˣ paginator examples to the collections and generic resource guides.
+- Added Arkormˣ model and collection examples to the collections and generic resource guides.
+
 ### Planned
 
 - Plugin System for lifecycle extension without core modification

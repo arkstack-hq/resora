@@ -87,6 +87,61 @@ Output becomes:
 }
 ```
 
+### Arkormˣ Paginators
+
+`ResourceCollection` also supports Arkormˣ paginator classes directly:
+
+- `LengthAwarePaginator`
+- `Paginator`
+
+```ts
+import { ArkormCollection, LengthAwarePaginator, Model } from 'arkormx';
+import { ResourceCollection } from 'resora';
+import { User } from 'src/models/User';
+
+const models = await User.query().limit(2).paginate();
+
+const data = new ArkormCollection([
+  { id: 1, name: 'A' },
+  { id: 2, name: 'B' },
+]);
+
+const paginator = new LengthAwarePaginator(data, 10, 2, 2, { path: '/users' });
+const modelsBody = new ResourceCollection(models).getBody();
+const body = new ResourceCollection(paginator).getBody();
+```
+
+Example output:
+
+```json
+{
+  "data": [
+    { "id": 1, "name": "A" },
+    { "id": 2, "name": "B" }
+  ],
+  "links": {
+    "first": "/users?page=1",
+    "last": "/users?page=5",
+    "prev": "/users?page=1",
+    "next": "/users?page=3"
+  },
+  "meta": {
+    "total": 10,
+    "per_page": 2,
+    "current_page": 2,
+    "last_page": 5,
+    "from": 3,
+    "to": 4,
+    "links": {
+      "first": "/users?page=1",
+      "last": "/users?page=5",
+      "prev": "/users?page=1",
+      "next": "/users?page=3"
+    }
+  }
+}
+```
+
 ---
 
 ## Cursor Pagination Support

@@ -8,6 +8,7 @@ import {
 } from './state'
 
 import { Config } from '../types'
+import { isArkormLikeCollection } from './arkorm'
 
 /**
  * Retrieves the configured keys for pagination extras (meta, links, cursor) based on the application's configuration.
@@ -86,7 +87,37 @@ export const buildPaginationExtras = (resource: any): Record<string, any> => {
     const { metaKey, linksKey, cursorKey } = getPaginationExtraKeys()
     const extra: Record<string, any> = {}
 
-    const pagination = resource?.pagination
+    const isArkormPaginatorLike = !!resource
+        && typeof resource === 'object'
+        && !!resource.meta
+        && typeof resource.meta === 'object'
+        && (Array.isArray(resource.data) || isArkormLikeCollection(resource.data))
+
+    const arkormLinks = isArkormPaginatorLike
+        ? {
+            first: typeof resource.firstPageUrl === 'function' ? resource.firstPageUrl() : undefined,
+            last: typeof resource.lastPageUrl === 'function' ? resource.lastPageUrl() : undefined,
+            prev: typeof resource.previousPageUrl === 'function' ? resource.previousPageUrl() : undefined,
+            next: typeof resource.nextPageUrl === 'function' ? resource.nextPageUrl() : undefined,
+        }
+        : undefined
+
+    const sanitizedArkormLinks = arkormLinks
+        ? Object.entries(arkormLinks).reduce<Record<string, any>>((accumulator, [key, value]) => {
+            if (typeof value !== 'undefined') {
+                accumulator[key] = value
+            }
+
+            return accumulator
+        }, {})
+        : undefined
+
+    const pagination = resource?.pagination || (isArkormPaginatorLike
+        ? {
+            ...resource.meta,
+            links: resource.links || sanitizedArkormLinks,
+        }
+        : undefined)
     const cursor = resource?.cursor
 
     const metaBlock: Record<string, any> = {}
@@ -114,10 +145,18 @@ export const buildPaginationExtras = (resource: any): Record<string, any> => {
         }
 
         const linksSource: Record<string, any> = {
-            first: buildPageUrl(pagination.firstPage, pagination.path),
-            last: buildPageUrl(pagination.lastPage, pagination.path),
-            prev: buildPageUrl(pagination.prevPage, pagination.path),
-            next: buildPageUrl(pagination.nextPage, pagination.path),
+            first: pagination.links && Object.prototype.hasOwnProperty.call(pagination.links, 'first')
+                ? pagination.links.first
+                : buildPageUrl(pagination.firstPage, pagination.path),
+            last: pagination.links && Object.prototype.hasOwnProperty.call(pagination.links, 'last')
+                ? pagination.links.last
+                : buildPageUrl(pagination.lastPage, pagination.path),
+            prev: pagination.links && Object.prototype.hasOwnProperty.call(pagination.links, 'prev')
+                ? pagination.links.prev
+                : buildPageUrl(pagination.prevPage, pagination.path),
+            next: pagination.links && Object.prototype.hasOwnProperty.call(pagination.links, 'next')
+                ? pagination.links.next
+                : buildPageUrl(pagination.nextPage, pagination.path),
         }
 
         for (const [sourceKey, outputKey] of Object.entries(getGlobalPaginatedLinks() as Config['paginatedLinks'])) {

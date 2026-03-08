@@ -5,6 +5,7 @@ import {
   Collectible,
   MetaData,
   NonCollectible,
+  PaginatorLike,
   ResourceBody,
   ResourceData,
   ResponseStructureConfig,
@@ -117,7 +118,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> {
    * @returns 
    */
   static collection<
-    C extends ResourceData[] | Collectible | CollectionLike = ResourceData[],
+    C extends ResourceData[] | Collectible | CollectionLike | PaginatorLike = ResourceData[],
     T extends ResourceData = any
   > (data: C) {
     return new ResourceCollection<C, T>(data).setCollects(this)

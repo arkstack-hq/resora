@@ -1,7 +1,6 @@
-import { ArkormCollection, Model } from 'arkormx'
+import { ArkormCollection, LengthAwarePaginator, Model, Paginator } from 'arkormx'
+import { GenericResource, Resource, ResourceCollection } from 'src'
 import { describe, expect, it } from 'vitest'
-
-import { Resource } from 'src'
 
 class TestArkormModel extends Model<Record<string, unknown>> {
 }
@@ -65,6 +64,75 @@ describe('Arkorm integration', () => {
                 { id: 1, name: 'A' },
                 { id: 2, name: 'B' },
             ],
+        })
+    })
+
+    it('serializes LengthAwarePaginator in ResourceCollection', () => {
+        const models = new ArkormCollection([
+            new TestArkormModel({ id: 1, name: 'A' }),
+            new TestArkormModel({ id: 2, name: 'B' }),
+        ])
+
+        const paginator = new LengthAwarePaginator(models, 10, 2, 2, { path: '/users' })
+        const collection = new ResourceCollection(paginator)
+
+        expect(collection.getBody()).toEqual({
+            data: [
+                { id: 1, name: 'A' },
+                { id: 2, name: 'B' },
+            ],
+            links: {
+                first: '/users?page=1',
+                last: '/users?page=5',
+                prev: '/users?page=1',
+                next: '/users?page=3',
+            },
+            meta: {
+                total: 10,
+                per_page: 2,
+                current_page: 2,
+                last_page: 5,
+                from: 3,
+                to: 4,
+                links: {
+                    first: '/users?page=1',
+                    last: '/users?page=5',
+                    prev: '/users?page=1',
+                    next: '/users?page=3',
+                },
+            },
+        })
+    })
+
+    it('serializes simple Paginator in GenericResource', () => {
+        const models = new ArkormCollection([
+            new TestArkormModel({ id: 1, name: 'A' }),
+            new TestArkormModel({ id: 2, name: 'B' }),
+        ])
+
+        const paginator = new Paginator(models, 2, 1, true, { path: '/users' })
+        const resource = new GenericResource(paginator)
+        const body = JSON.parse(JSON.stringify(resource.getBody()))
+
+        expect(body).toEqual({
+            data: [
+                { id: 1, name: 'A' },
+                { id: 2, name: 'B' },
+            ],
+            links: {
+                prev: null,
+                next: '/users?page=2',
+            },
+            meta: {
+                per_page: 2,
+                current_page: 1,
+                from: 1,
+                to: 2,
+                links: {
+                    prev: null,
+                    next: '/users?page=2',
+                },
+            },
         })
     })
 })

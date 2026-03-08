@@ -6,6 +6,7 @@ import {
   Collectible,
   CollectionBody,
   MetaData,
+  PaginatorLike,
   ResponseStructureConfig,
 } from './types'
 import { ServerResponse } from './ServerResponse'
@@ -33,7 +34,7 @@ import {
 /**
  * ResourceCollection class to handle API resource transformation and response building for collections
  */
-export class ResourceCollection<R extends ResourceData[] | Collectible | CollectionLike = ResourceData[], T extends ResourceData = any> {
+export class ResourceCollection<R extends ResourceData[] | Collectible | CollectionLike | PaginatorLike = ResourceData[], T extends ResourceData = any> {
   [key: string]: any;
   private body: CollectionBody<R> = { data: [] as any }
   public resource: R
@@ -49,7 +50,21 @@ export class ResourceCollection<R extends ResourceData[] | Collectible | Collect
       return false
     }
 
-    return Array.isArray((value as Collectible).data)
+    const resource = value as Partial<Collectible & PaginatorLike>
+
+    if (resource.pagination && Array.isArray(resource.data)) {
+      return true
+    }
+
+    const hasPaginatorMeta = !!resource.meta
+      && typeof resource.meta === 'object'
+      && 'currentPage' in resource.meta
+
+    if (!hasPaginatorMeta) {
+      return false
+    }
+
+    return Array.isArray(resource.data) || isArkormLikeCollection(resource.data)
   }
 
   /**
@@ -164,7 +179,7 @@ export class ResourceCollection<R extends ResourceData[] | Collectible | Collect
 
       data = sanitizeConditionalAttributes(data) as ResourceData[]
 
-      const paginationExtras = this.isPaginatedCollectible(this.resource)
+      const paginationExtras = !Array.isArray(this.resource)
         ? buildPaginationExtras(this.resource)
         : {}
 
@@ -260,6 +275,8 @@ export class ResourceCollection<R extends ResourceData[] | Collectible | Collect
   toArray (): (
     R extends Collectible
       ? R['data'][number]
+      : R extends PaginatorLike<infer TPaginatorData>
+        ? TPaginatorData
       : R extends CollectionLike<infer TCollectionData>
         ? TCollectionData
         : R extends ResourceData[]

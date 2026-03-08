@@ -23,8 +23,14 @@ export interface Collectible {
     pagination?: Pagination | undefined;
 }
 
-export interface CollectionLike<T = ResourceData> {
+export interface CollectionLike<T = any> {
     all: () => T[];
+}
+
+export interface PaginatorLike<T = any> {
+    data: CollectionLike<T> | T[] | unknown;
+    meta: Record<string, any>;
+    links?: Record<string, any>;
 }
 
 export interface ResponseData<R extends ResourceData = any> extends ResourceDef {
@@ -45,9 +51,11 @@ export interface ResponseDataCollection<R extends Collectible | undefined = unde
     meta?: R extends Collectible ? PaginatedMetaData<R> | undefined : undefined;
 };
 
-export type CollectionBody<R extends ResourceData[] | Collectible | CollectionLike = ResourceData[]> = ResponseDataCollection<
+export type CollectionBody<R extends ResourceData[] | Collectible | CollectionLike | PaginatorLike = ResourceData[]> = ResponseDataCollection<
     R extends Collectible
         ? R
+        : R extends PaginatorLike<infer TPaginatorData>
+            ? { data: TPaginatorData[] }
         : R extends CollectionLike<infer T>
             ? { data: T[] }
             : { data: R }
@@ -57,7 +65,10 @@ export type ResourceBody<R extends ResourceData | NonCollectible = ResourceData>
     R extends NonCollectible ? R : { data: R }
 >
 
-export type GenericBody<R extends NonCollectible | Collectible | CollectionLike | ResourceData = ResourceData> = ResponseData<
+export type GenericBody<R extends NonCollectible | Collectible | CollectionLike | PaginatorLike | ResourceData = ResourceData> = ResponseData<
+    R extends PaginatorLike<infer TPaginatorData>
+        ? { data: TPaginatorData[] }
+        :
     R extends CollectionLike<infer T>
         ? { data: T[] }
         : R

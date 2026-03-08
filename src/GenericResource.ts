@@ -6,6 +6,7 @@ import {
   GenericBody,
   MetaData,
   NonCollectible,
+  PaginatorLike,
   ResourceData,
   ResponseStructureConfig,
 } from './types'
@@ -36,7 +37,7 @@ import {
  * GenericResource class to handle API resource transformation and response building
  */
 export class GenericResource<
-  R extends NonCollectible | Collectible | CollectionLike | ResourceData = ResourceData,
+  R extends NonCollectible | Collectible | CollectionLike | PaginatorLike | ResourceData = ResourceData,
   T extends ResourceData = any
 > {
   [key: string]: any;

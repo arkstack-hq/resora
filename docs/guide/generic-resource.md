@@ -19,10 +19,10 @@ const body = new GenericResource(payload).getBody();
 
 ```json
 {
-	"data": {
-		"id": 1,
-		"name": "Jane"
-	}
+  "data": {
+    "id": 1,
+    "name": "Jane"
+  }
 }
 ```
 
@@ -30,8 +30,8 @@ const body = new GenericResource(payload).getBody();
 
 ```ts
 const payload = [
-	{ id: 1, name: 'A' },
-	{ id: 2, name: 'B' },
+  { id: 1, name: 'A' },
+  { id: 2, name: 'B' },
 ];
 
 const body = new GenericResource(payload).getBody();
@@ -39,10 +39,10 @@ const body = new GenericResource(payload).getBody();
 
 ```json
 {
-	"data": [
-		{ "id": 1, "name": "A" },
-		{ "id": 2, "name": "B" }
-	]
+  "data": [
+    { "id": 1, "name": "A" },
+    { "id": 2, "name": "B" }
+  ]
 }
 ```
 
@@ -68,18 +68,18 @@ const body = new GenericResource(user).getBody();
 
 ```json
 {
-	"data": {
-		"id": 1,
-		"name": "Jane",
-		"profile": {
-			"id": 10,
-			"bio": "Creator"
-		},
-		"posts": [
-			{ "id": 100, "title": "First" },
-			{ "id": 101, "title": "Second" }
-		]
-	}
+  "data": {
+    "id": 1,
+    "name": "Jane",
+    "profile": {
+      "id": 10,
+      "bio": "Creator"
+    },
+    "posts": [
+      { "id": 100, "title": "First" },
+      { "id": 101, "title": "Second" }
+    ]
+  }
 }
 ```
 
@@ -88,6 +88,48 @@ const body = new GenericResource(user).getBody();
 ```ts
 const users = await User.query().limit(2).get();
 const body = new GenericResource(users.all()).getBody();
+```
+
+### Arkormˣ paginators
+
+`GenericResource` also supports Arkormˣ paginator instances directly.
+
+```ts
+import { ArkormCollection, Paginator } from 'arkormx';
+import { GenericResource } from 'resora';
+
+const data = new ArkormCollection([
+  { id: 1, name: 'A' },
+  { id: 2, name: 'B' },
+]);
+
+const paginator = new Paginator(data, 2, 1, true, { path: '/users' });
+const body = new GenericResource(paginator).getBody();
+```
+
+Example output:
+
+```json
+{
+  "data": [
+    { "id": 1, "name": "A" },
+    { "id": 2, "name": "B" }
+  ],
+  "links": {
+    "prev": null,
+    "next": "/users?page=2"
+  },
+  "meta": {
+    "per_page": 2,
+    "current_page": 1,
+    "from": 1,
+    "to": 2,
+    "links": {
+      "prev": null,
+      "next": "/users?page=2"
+    }
+  }
+}
 ```
 
 ## Metadata and envelope customization
