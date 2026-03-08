@@ -31,8 +31,8 @@ importers:
         specifier: 4.0.18
         version: 4.0.18(vitest@4.0.18(@types/node@20.19.33)(tsx@4.21.0))
       arkormx:
-        specifier: file:../arkorm
-        version: file:../arkorm(@prisma/client@7.4.2(typescript@5.9.3))(@types/node@20.19.33)
+        specifier: ^0.1.11
+        version: 0.1.11(@prisma/client@7.4.2(typescript@5.9.3))(@types/node@20.19.33)
       barrelize:
         specifier: ^1.7.3
         version: 1.7.3
@@ -1196,8 +1196,8 @@ packages:
   argparse@1.0.10:
     resolution: {integrity: sha512-o5Roy6tNG4SL/FOkCAN6RzjiakZS25RLYFrcMttJqbdd8BWrnA+fGz57iN5Pb06pvBGvl5gQ0B48dJlslXvoTg==}
 
-  arkormx@file:../arkorm:
-    resolution: {directory: ../arkorm, type: directory}
+  arkormx@0.1.11:
+    resolution: {integrity: sha512-8KlCKXZO3GraSRKN6ecSySfexhCCY1VXqoZXbzIVuXM3z0DSy3uyiEl4Sp3ReUH3jQDOV00hhD4UD7AOH/fKAA==}
     engines: {node: '>=20.0.0'}
     hasBin: true
     peerDependencies:
@@ -3879,7 +3879,7 @@ snapshots:
     dependencies:
       sprintf-js: 1.0.3
 
-  arkormx@file:../arkorm(@prisma/client@7.4.2(typescript@5.9.3))(@types/node@20.19.33):
+  arkormx@0.1.11(@prisma/client@7.4.2(typescript@5.9.3))(@types/node@20.19.33):
     dependencies:
       '@h3ravel/collect.js': 5.3.6
       '@h3ravel/musket': 0.10.1(@types/node@20.19.33)
