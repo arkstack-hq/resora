@@ -1,11 +1,39 @@
 import { ArkormCollection, LengthAwarePaginator, Model, Paginator } from 'arkormx'
 import { GenericResource, Resource, ResourceCollection } from 'src'
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 
 class TestArkormModel extends Model<Record<string, unknown>> {
 }
 
+class UserModel extends Model<{ id: number, name: string }> {
+}
+
+class UserResource extends Resource {
+    public data () {
+        return {
+            id: this.id,
+            name: this.name,
+        }
+    }
+}
+
+class UserCollection extends ResourceCollection {
+    collects = UserResource
+    public data () {
+        return this.toArray()
+    }
+}
+
 describe('Arkorm integration', () => {
+    beforeAll(() => {
+        UserModel.query = () => ({
+            paginate: (pp: number) => new LengthAwarePaginator<UserModel>([
+                new UserModel({ id: 1, name: 'Jane' }),
+                new UserModel({ id: 2, name: 'John' }),
+            ], 2, pp, 1, { path: '/users' }),
+        } as never)
+    })
+
     it('serializes Arkorm-like models without manual mapping', () => {
         const model = new TestArkormModel({ id: 1, name: 'Jane' })
 
@@ -48,6 +76,19 @@ describe('Arkorm integration', () => {
                     { id: 101, title: 'Second' },
                 ],
             },
+        })
+    })
+
+    it('serializes eager-loaded Arkorm-like relationships in extended collections', async () => {
+        const models = await UserModel.query().paginate(2)
+
+        const collection = new UserCollection(models)
+
+        expect(collection.getBody()).toMatchObject({
+            data: [
+                { id: 1, name: 'Jane' },
+                { id: 2, name: 'John' },
+            ],
         })
     })
 
@@ -102,6 +143,29 @@ describe('Arkorm integration', () => {
                 },
             },
         })
+    })
+
+    it('accepts explicit LengthAwarePaginator<UserModel> without TS errors', () => {
+        const models = new ArkormCollection<UserModel>([
+            new UserModel({ id: 1, name: 'A' }),
+            new UserModel({ id: 2, name: 'B' }),
+        ])
+
+        const paginator = new LengthAwarePaginator<UserModel>(
+            models,
+            10,
+            2,
+            1,
+            { path: '/users' }
+        )
+
+        const collection = new ResourceCollection(paginator)
+        const body = collection.getBody()
+
+        expect(body.data).toEqual([
+            { id: 1, name: 'A' },
+            { id: 2, name: 'B' },
+        ])
     })
 
     it('serializes simple Paginator in GenericResource', () => {

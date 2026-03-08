@@ -34,7 +34,10 @@ import {
 /**
  * ResourceCollection class to handle API resource transformation and response building for collections
  */
-export class ResourceCollection<R extends ResourceData[] | Collectible | CollectionLike | PaginatorLike = ResourceData[], T extends ResourceData = any> {
+export class ResourceCollection<
+  R extends ResourceData[] | Collectible | CollectionLike | PaginatorLike = ResourceData[] | Collectible | CollectionLike | PaginatorLike,
+  T extends ResourceData = any
+> {
   [key: string]: any;
   private body: CollectionBody<R> = { data: [] as any }
   public resource: R
