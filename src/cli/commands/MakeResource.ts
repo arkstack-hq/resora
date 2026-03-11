@@ -24,23 +24,24 @@ export class MakeResource extends Command<CliApp> {
     async handle () {
         this.app.command = this
         let path = ''
+        const name: string = this.argument('name') || this.argument('prefix')
         const action = this.dictionary.name || this.dictionary.baseCommand
 
-        if (['resource', 'collection'].includes(action) && !this.argument('name'))
+        if (['resource', 'collection'].includes(action) && !name)
             return void this.error('Error: Name argument is required.')
-        if (action === 'all' && !this.argument('prefix'))
+        if (action === 'all' && !name)
             return void this.error('Error: Prefix argument is required.')
 
         switch (action) {
             case 'resource':
-                ({ path } = this.app.makeResource(this.argument('name'), this.options()))
+                ({ path } = this.app.makeResource(name, this.options()))
                 break
             case 'collection':
-                ({ path } = this.app.makeResource(this.argument('name') + 'Collection', this.options()))
+                ({ path } = this.app.makeResource(name + 'Collection', this.options()))
                 break
             case 'all': {
-                const o1 = this.app.makeResource(this.argument('prefix'), { force: this.option('force') })
-                const o2 = this.app.makeResource(this.argument('prefix') + 'Collection', {
+                const o1 = this.app.makeResource(name, { force: this.option('force') })
+                const o2 = this.app.makeResource(name + 'Collection', {
                     collection: true, force: this.option('force')
                 })
                 path = `${o1.path}, ${o2.path}`

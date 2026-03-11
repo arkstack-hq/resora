@@ -135,12 +135,16 @@ export class CliApp {
             process.exit(1)
         }
 
+        resourceName = resourceName.split('/').pop()?.split('.').shift() as string
+
         const collectsName = resourceName.replace(/(Resource|Collection)$/, '') + 'Resource'
-        const collects = `/** 
-     * The resource that this collection collects.
-     */
-    collects = ${collectsName}
-    `
+        const collects = [
+            '/**',
+            ' * The resource that this collection collects.',
+            ' */',
+            `collects = ${collectsName}`,
+        ].join('\n')
+
         const collectsImport = `import ${collectsName} from './${collectsName}'\n`
         const hasCollects = (!!options?.collection || name.endsWith('Collection')) && existsSync(join(this.config.resourcesDir, `${collectsName}.ts`))
 
