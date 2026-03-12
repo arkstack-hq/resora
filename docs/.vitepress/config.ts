@@ -65,6 +65,9 @@ export default defineConfig({
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/arkstack-hq/resora' }
-    ]
+    ],
+    search: {
+      provider: 'local'
+    },
   }
 })
