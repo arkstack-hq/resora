@@ -1,5 +1,7 @@
 import {
+    GenericResource,
     Resource,
+    ResourceCollection,
     applyRuntimeConfig,
     defineConfig,
     loadRuntimeConfig,
@@ -173,6 +175,86 @@ describe('Configuration', () => {
                 preferredCase: 'camel',
             })
             .config({
+                responseStructure: {
+                    rootKey: 'result',
+                },
+            })
+            .getBody()
+
+        expect(body).toEqual({
+            result: { firstName: 'John' },
+        })
+    })
+
+    it('supports collection subclass config() for per-collection behavior', () => {
+        setGlobalCase('kebab')
+        setGlobalResponseStructure({ rootKey: 'payload' })
+
+        class UserCollection extends ResourceCollection {
+            static config () {
+                return {
+                    preferredCase: 'snake' as const,
+                    responseStructure: {
+                        rootKey: 'result',
+                    },
+                }
+            }
+        }
+
+        const body = new UserCollection([{ firstName: 'John' }]).getBody()
+
+        expect(body).toEqual({
+            result: [{ first_name: 'John' }],
+        })
+    })
+
+    it('supports fluent collection config() chaining', () => {
+        setGlobalCase('snake')
+        setGlobalResponseStructure({ rootKey: 'payload' })
+
+        const body = new ResourceCollection([{ first_name: 'John' }])
+            .config({
+                preferredCase: 'camel',
+                responseStructure: {
+                    rootKey: 'result',
+                },
+            })
+            .getBody()
+
+        expect(body).toEqual({
+            result: [{ firstName: 'John' }],
+        })
+    })
+
+    it('supports generic subclass config() for per-generic behavior', () => {
+        setGlobalCase('kebab')
+        setGlobalResponseStructure({ rootKey: 'payload' })
+
+        class UserGeneric extends GenericResource {
+            static config () {
+                return {
+                    preferredCase: 'snake' as const,
+                    responseStructure: {
+                        rootKey: 'result',
+                    },
+                }
+            }
+        }
+
+        const body = new UserGeneric({ firstName: 'John' }).getBody()
+
+        expect(body).toEqual({
+            result: { first_name: 'John' },
+        })
+    })
+
+    it('supports fluent generic config() chaining', () => {
+        setGlobalCase('snake')
+        setGlobalResponseStructure({ rootKey: 'payload' })
+
+        const body = new GenericResource({ first_name: 'John' })
+            .config({
+                preferredCase: 'camel',
                 responseStructure: {
                     rootKey: 'result',
                 },

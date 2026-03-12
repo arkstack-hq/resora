@@ -1,31 +1,26 @@
 import type { H3Event } from 'h3'
 import {
-  CaseStyle,
   CollectionLike,
   ResourceData,
   Collectible,
   CollectionBody,
   MetaData,
   PaginatorLike,
-  ResponseStructureConfig,
+  ResourceLevelConfig,
 } from './types'
 import { ServerResponse } from './ServerResponse'
 import type { Response } from 'express'
 import { Resource } from './Resource'
+import { BaseSerializer } from './BaseSerializer'
 import {
   appendRootProperties,
   buildPaginationExtras,
   buildResponseEnvelope,
   getCaseTransformer,
-  getGlobalCase,
-  getGlobalResponseStructure,
   getPaginationExtraKeys,
   isArkormLikeCollection,
   mergeMetadata,
   normalizeSerializableData,
-  resolveMergeWhen,
-  resolveWhen,
-  resolveWhenNotNull,
   resolveWithHookMetadata,
   sanitizeConditionalAttributes,
   transformKeys,
@@ -37,7 +32,7 @@ import {
 export class ResourceCollection<
   R extends ResourceData[] | Collectible | CollectionLike | PaginatorLike = ResourceData[] | Collectible | CollectionLike | PaginatorLike,
   T extends ResourceData = any
-> {
+> extends BaseSerializer {
   [key: string]: any;
   private body: CollectionBody<R> = { data: [] as any }
   public resource: R
@@ -70,32 +65,10 @@ export class ResourceCollection<
     return Array.isArray(resource.data) || isArkormLikeCollection(resource.data)
   }
 
-  /**
-   * Preferred case style for this collection's output keys.
-   * Set on a subclass to override the global default.
-   */
-  static preferredCase?: CaseStyle
-
-  /**
-   * Response structure override for this collection class.
-   */
-  static responseStructure?: ResponseStructureConfig
-
-  private called: {
-    json?: boolean
-    data?: boolean
-    toArray?: boolean
-    additional?: boolean
-    with?: boolean
-    withResponse?: boolean
-    status?: boolean
-    then?: boolean
-    toResponse?: boolean
-  } = {}
-
   constructor(rsc: R)
   constructor(rsc: R, res: Response)
   constructor(rsc: R, private res?: Response) {
+    super()
     this.resource = rsc
   }
 
@@ -124,37 +97,31 @@ export class ResourceCollection<
     return this
   }
 
-  /**
-   * Conditionally include a value in serialized output.
-   */
-  when<T> (condition: any, value: T | (() => T)): T | undefined {
-    return resolveWhen(condition, value) as T | undefined
-  }
+  private resolveCollectsConfig (): ResourceLevelConfig | undefined {
+    const collectedResource = this.collects as typeof Resource | undefined
 
-  /**
-   * Include a value only when it is not null/undefined.
-   */
-  whenNotNull<T> (value: T | null | undefined): T | undefined {
-    return resolveWhenNotNull(value) as T | undefined
-  }
+    if (!collectedResource) {
+      return undefined
+    }
 
-  /**
-   * Conditionally merge object attributes into serialized output.
-   */
-  mergeWhen<T extends Record<string, any>> (condition: any, value: T | (() => T)): Partial<T> {
-    return resolveMergeWhen(condition, value)
+    const collectedConfig = typeof collectedResource.config === 'function'
+      ? collectedResource.config()
+      : {}
+
+    return {
+      preferredCase: collectedConfig.preferredCase ?? collectedResource.preferredCase,
+      responseStructure: {
+        ...(collectedResource.responseStructure || {}),
+        ...(collectedConfig.responseStructure || {}),
+      },
+    }
   }
 
   private resolveResponseStructure () {
-    const local = (this.constructor as typeof ResourceCollection).responseStructure
-    const collectsLocal = (this.collects as typeof Resource | undefined)?.responseStructure
-    const global = getGlobalResponseStructure()
-
-    return {
-      wrap: local?.wrap ?? collectsLocal?.wrap ?? global?.wrap ?? true,
-      rootKey: local?.rootKey ?? collectsLocal?.rootKey ?? global?.rootKey ?? 'data',
-      factory: local?.factory ?? collectsLocal?.factory ?? global?.factory,
-    }
+    return this.resolveSerializerResponseStructure(
+      this.constructor as typeof ResourceCollection,
+      this.resolveCollectsConfig()
+    )
   }
 
   private getPayloadKey () {
@@ -193,9 +160,10 @@ export class ResourceCollection<
       }
 
       // Apply case transformation if configured
-      const caseStyle = (this.constructor as typeof ResourceCollection).preferredCase
-        ?? (this.collects as typeof Resource | undefined)?.preferredCase
-        ?? getGlobalCase()
+      const caseStyle = this.resolveSerializerCaseStyle(
+        this.constructor as typeof ResourceCollection,
+        this.resolveCollectsConfig()
+      )
       if (caseStyle) {
         const transformer = getCaseTransformer(caseStyle)
         data = transformKeys(data, transformer) as CollectionBody<R>['data']
@@ -277,14 +245,14 @@ export class ResourceCollection<
    */
   toArray (): (
     R extends Collectible
-      ? R['data'][number]
-      : R extends PaginatorLike<infer TPaginatorData>
-        ? TPaginatorData
-      : R extends CollectionLike<infer TCollectionData>
-        ? TCollectionData
-        : R extends ResourceData[]
-          ? R[number]
-          : never
+    ? R['data'][number]
+    : R extends PaginatorLike<infer TPaginatorData>
+    ? TPaginatorData
+    : R extends CollectionLike<infer TCollectionData>
+    ? TCollectionData
+    : R extends ResourceData[]
+    ? R[number]
+    : never
   )[] {
     this.called.toArray = true
     this.json()

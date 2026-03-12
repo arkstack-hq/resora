@@ -1,33 +1,28 @@
 import type { H3Event } from 'h3'
 import {
-  CaseStyle,
   CollectionLike,
   Collectible,
   GenericBody,
   MetaData,
   NonCollectible,
   PaginatorLike,
+  ResourceLevelConfig,
   ResourceData,
-  ResponseStructureConfig,
 } from './types'
 import { ServerResponse } from './ServerResponse'
 import type { Response } from 'express'
 import { Resource } from './Resource'
+import { BaseSerializer } from './BaseSerializer'
 import {
   appendRootProperties,
   buildPaginationExtras,
   buildResponseEnvelope,
   getCaseTransformer,
-  getGlobalCase,
-  getGlobalResponseStructure,
   getPaginationExtraKeys,
   isArkormLikeCollection,
   isArkormLikeModel,
   mergeMetadata,
   normalizeSerializableData,
-  resolveMergeWhen,
-  resolveWhen,
-  resolveWhenNotNull,
   resolveWithHookMetadata,
   sanitizeConditionalAttributes,
   transformKeys,
@@ -39,7 +34,7 @@ import {
 export class GenericResource<
   R extends NonCollectible | Collectible | CollectionLike | PaginatorLike | ResourceData = ResourceData,
   T extends ResourceData = any
-> {
+> extends BaseSerializer {
   [key: string]: any;
   private body: GenericBody<R> = { data: {} as any }
   public resource: R
@@ -50,30 +45,8 @@ export class GenericResource<
     raw: Response | H3Event['res']
   }
 
-  /**
-   * Preferred case style for this resource's output keys.
-   * Set on a subclass to override the global default.
-   */
-  static preferredCase?: CaseStyle
-
-  /**
-   * Response structure override for this generic resource class.
-   */
-  static responseStructure?: ResponseStructureConfig
-
-  private called: {
-    json?: boolean
-    data?: boolean
-    toArray?: boolean
-    additional?: boolean
-    with?: boolean
-    withResponse?: boolean
-    status?: boolean
-    then?: boolean
-    toResponse?: boolean
-  } = {}
-
   constructor(rsc: R, private res?: Response) {
+    super()
     this.resource = rsc
 
     const hasDataPayload = !!this.resource
@@ -161,37 +134,31 @@ export class GenericResource<
     return this
   }
 
-  /**
-   * Conditionally include a value in serialized output.
-   */
-  when<T> (condition: any, value: T | (() => T)): T | undefined {
-    return resolveWhen(condition, value) as T | undefined
-  }
+  private resolveCollectsConfig (): ResourceLevelConfig | undefined {
+    const collectedResource = this.collects as typeof Resource | undefined
 
-  /**
-   * Include a value only when it is not null/undefined.
-   */
-  whenNotNull<T> (value: T | null | undefined): T | undefined {
-    return resolveWhenNotNull(value) as T | undefined
-  }
+    if (!collectedResource) {
+      return undefined
+    }
 
-  /**
-   * Conditionally merge object attributes into serialized output.
-   */
-  mergeWhen<T extends Record<string, any>> (condition: any, value: T | (() => T)): Partial<T> {
-    return resolveMergeWhen(condition, value)
+    const collectedConfig = typeof collectedResource.config === 'function'
+      ? collectedResource.config()
+      : {}
+
+    return {
+      preferredCase: collectedConfig.preferredCase ?? collectedResource.preferredCase,
+      responseStructure: {
+        ...(collectedResource.responseStructure || {}),
+        ...(collectedConfig.responseStructure || {}),
+      },
+    }
   }
 
   private resolveResponseStructure () {
-    const local = (this.constructor as typeof GenericResource).responseStructure
-    const collectsLocal = (this.collects as typeof Resource | undefined)?.responseStructure
-    const global = getGlobalResponseStructure()
-
-    return {
-      wrap: local?.wrap ?? collectsLocal?.wrap ?? global?.wrap ?? true,
-      rootKey: local?.rootKey ?? collectsLocal?.rootKey ?? global?.rootKey ?? 'data',
-      factory: local?.factory ?? collectsLocal?.factory ?? global?.factory,
-    }
+    return this.resolveSerializerResponseStructure(
+      this.constructor as typeof GenericResource,
+      this.resolveCollectsConfig()
+    )
   }
 
   private getPayloadKey () {
@@ -231,7 +198,10 @@ export class GenericResource<
       }
 
       // Apply case transformation if configured
-      const caseStyle = (this.constructor as typeof GenericResource).preferredCase ?? getGlobalCase()
+      const caseStyle = this.resolveSerializerCaseStyle(
+        this.constructor as typeof GenericResource,
+        this.resolveCollectsConfig()
+      )
       if (caseStyle) {
         const transformer = getCaseTransformer(caseStyle)
         data = transformKeys(data, transformer)
