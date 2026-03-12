@@ -40,7 +40,7 @@ class UserCollection extends ResourceCollection {
   collects = UserResource;
 
   data() {
-    return this.toArray();
+    return this.toObject();
   }
 }
 ```

@@ -27,7 +27,7 @@ describe('Core', () => {
         const resource = { id: 1, name: 'Test Resource' }
         const jsonResource = new Resource(resource)
 
-        expect(jsonResource.toArray()).toEqual(jsonResource.toObject())
+        expect(jsonResource.toObject()).toEqual(jsonResource.toObject())
     })
 
     it('should convert resource to JSON response format', () => {

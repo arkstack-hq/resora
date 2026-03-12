@@ -228,7 +228,7 @@ Result:
 
 Inside extended classes:
 
-- `this.toArray()` returns original payload
+- `this.toObject()` returns original payload
 - Properties are proxied (`this.id`, `this.name`)
 
 ### Chaining Still Works

@@ -20,7 +20,7 @@ class UserResource extends Resource {
 class UserCollection extends ResourceCollection {
     collects = UserResource
     public data () {
-        return this.toArray()
+        return this.toObject()
     }
 }
 

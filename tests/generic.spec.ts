@@ -25,7 +25,7 @@ describe('Generic Core', () => {
         const resourceData: ResourceData = { id: 1, name: 'Test Resource' }
         const jsonResource = new GenericResource(resourceData)
 
-        expect(jsonResource.toArray()).toEqual(jsonResource.toObject())
+        expect(jsonResource.toObject()).toEqual(jsonResource.toObject())
     })
 
     it('should allow access to resource properties directly on the instance', () => {

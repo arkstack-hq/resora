@@ -29,12 +29,12 @@ resource.data();
 
 ---
 
-### toArray()
+### toObject()
 
 Returns the transformed data without wrapping in `{ data }`.
 
 ```ts
-resource.toArray();
+resource.toObject();
 ```
 
 ---

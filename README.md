@@ -52,7 +52,7 @@ import { Resource } from 'resora';
 
 class UserResource extends Resource {
   data() {
-    return this.toArray();
+    return this.toObject();
   }
 }
 ```
@@ -88,7 +88,7 @@ class UserCollection<R extends User[]> extends ResourceCollection<R> {
   collects = UserResource;
 
   data() {
-    return this.toArray();
+    return this.toObject();
   }
 }
 ```

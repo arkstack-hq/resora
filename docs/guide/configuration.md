@@ -153,7 +153,7 @@ import { Resource } from 'resora'
 
 export default class {{ResourceName}} extends Resource {
   data () {
-    return this.toArray()
+    return this.toObject()
   }
 }
 ```

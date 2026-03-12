@@ -11,6 +11,6 @@ export default class {{ResourceName}} extends ResourceCollection {
      * @memberof {{ResourceName}}
      */
     data () {
-        return this.toArray()
+        return this.toObject()
     }
 }

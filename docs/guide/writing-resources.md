@@ -23,7 +23,7 @@ import { Resource } from 'resora';
 
 class UserResource extends Resource {
   data() {
-    return this.toArray();
+    return this.toObject();
   }
 }
 ```
@@ -208,7 +208,7 @@ class UserCollection<R extends User[]> extends ResourceCollection<R> {
   collects = UserResource;
 
   data() {
-    return this.toArray();
+    return this.toObject();
   }
 }
 ```
@@ -429,6 +429,6 @@ This hook runs immediately before the response is dispatched in both:
 
 1. Always override `data()` when extending.
 2. Use `this.property` to access original data fields.
-3. Use `this.toArray()` inside collections to transform all items.
+3. Use `this.toObject()` inside collections to transform all items.
 4. Define `collects` when extending `ResourceCollection`.
 5. Let metadata extraction remain automatic.
