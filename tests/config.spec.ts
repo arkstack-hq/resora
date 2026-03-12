@@ -101,6 +101,89 @@ describe('Configuration', () => {
         })
     })
 
+    it('supports resource subclass config() for per-resource behavior', () => {
+        setGlobalCase('kebab')
+        setGlobalResponseStructure({ rootKey: 'payload' })
+
+        class UserResource extends Resource {
+            static config () {
+                return {
+                    preferredCase: 'snake' as const,
+                    responseStructure: {
+                        rootKey: 'result',
+                    },
+                }
+            }
+        }
+
+        const body = new UserResource({ firstName: 'John', lastName: 'Doe' }).getBody()
+
+        expect(body).toEqual({
+            result: { first_name: 'John', last_name: 'Doe' },
+        })
+    })
+
+    it('supports fluent resource config() chaining', () => {
+        setGlobalCase('snake')
+        setGlobalResponseStructure({ rootKey: 'payload' })
+
+        const body = new Resource({ first_name: 'John', last_name: 'Doe' })
+            .config({
+                preferredCase: 'camel',
+                responseStructure: {
+                    rootKey: 'result',
+                },
+            })
+            .getBody()
+
+        expect(body).toEqual({
+            result: { firstName: 'John', lastName: 'Doe' },
+        })
+    })
+
+    it('prefers fluent resource config() over static class config()', () => {
+        class UserResource extends Resource {
+            static config () {
+                return {
+                    preferredCase: 'snake' as const,
+                    responseStructure: {
+                        rootKey: 'payload',
+                    },
+                }
+            }
+        }
+
+        const body = new UserResource({ first_name: 'John' })
+            .config({
+                preferredCase: 'camel',
+                responseStructure: {
+                    rootKey: 'result',
+                },
+            })
+            .getBody()
+
+        expect(body).toEqual({
+            result: { firstName: 'John' },
+        })
+    })
+
+    it('merges fluent resource config() calls', () => {
+        const body = new Resource({ first_name: 'John' })
+            .config({
+                preferredCase: 'camel',
+            })
+            .config({
+                responseStructure: {
+                    rootKey: 'result',
+                },
+            })
+            .getBody()
+
+        expect(body).toEqual({
+            result: { firstName: 'John' },
+        })
+    })
+
     it('loads resora.config.cjs for runtime API resources', async () => {
         const configPath = path.resolve(process.cwd(), 'resora.config.cjs')
         const backupPath = path.resolve(process.cwd(), 'resora.config.cjs.bkp')

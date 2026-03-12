@@ -6,6 +6,7 @@ import {
   MetaData,
   NonCollectible,
   PaginatorLike,
+  ResourceLevelConfig,
   ResourceBody,
   ResourceData,
   ResponseStructureConfig,
@@ -38,6 +39,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> {
   private body: ResourceBody<R> = { data: {} as any }
   public resource: R
   private additionalMeta?: MetaData
+  private instanceConfig?: ResourceLevelConfig
   protected withResponseContext?: {
     response: ServerResponse<ResourceBody<R>>
     raw: Response | H3Event['res']
@@ -53,6 +55,11 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> {
    * Response structure override for this resource class.
    */
   static responseStructure?: ResponseStructureConfig
+
+  /**
+   * Config hook for per-resource class-level behavior.
+   */
+  static config?: () => ResourceLevelConfig
 
   private called: {
     json?: boolean
@@ -170,14 +177,49 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> {
     return resolveMergeWhen(condition, value)
   }
 
+  config (): ResourceLevelConfig
+  config (config: ResourceLevelConfig): this
+  config (config?: ResourceLevelConfig): ResourceLevelConfig | this {
+    if (typeof config === 'undefined') {
+      return this.instanceConfig || {}
+    }
+
+    this.instanceConfig = {
+      ...(this.instanceConfig || {}),
+      ...config,
+      responseStructure: {
+        ...(this.instanceConfig?.responseStructure || {}),
+        ...(config.responseStructure || {}),
+      },
+    }
+
+    return this
+  }
+
+  private resolveResourceConfig () {
+    const classConfigMethod = (this.constructor as typeof Resource).config
+    const classConfig = typeof classConfigMethod === 'function'
+      ? classConfigMethod()
+      : {}
+
+    return {
+      preferredCase: this.instanceConfig?.preferredCase ?? classConfig?.preferredCase,
+      responseStructure: {
+        ...(classConfig?.responseStructure || {}),
+        ...(this.instanceConfig?.responseStructure || {}),
+      },
+    }
+  }
+
   private resolveResponseStructure () {
+    const localConfig = this.resolveResourceConfig()
     const local = (this.constructor as typeof Resource).responseStructure
     const global = getGlobalResponseStructure()
 
     return {
-      wrap: local?.wrap ?? global?.wrap ?? true,
-      rootKey: local?.rootKey ?? global?.rootKey ?? 'data',
-      factory: local?.factory ?? global?.factory,
+      wrap: localConfig.responseStructure?.wrap ?? local?.wrap ?? global?.wrap ?? true,
+      rootKey: localConfig.responseStructure?.rootKey ?? local?.rootKey ?? global?.rootKey ?? 'data',
+      factory: localConfig.responseStructure?.factory ?? local?.factory ?? global?.factory,
     }
   }
 
@@ -207,7 +249,10 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> {
       data = sanitizeConditionalAttributes(data)
 
       // Apply case transformation if configured
-      const caseStyle = (this.constructor as typeof Resource).preferredCase ?? getGlobalCase()
+      const localConfig = this.resolveResourceConfig()
+      const caseStyle = localConfig.preferredCase
+        ?? (this.constructor as typeof Resource).preferredCase
+        ?? getGlobalCase()
       if (caseStyle) {
         const transformer = getCaseTransformer(caseStyle)
         data = transformKeys(data, transformer)

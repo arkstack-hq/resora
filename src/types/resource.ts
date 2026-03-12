@@ -1,4 +1,10 @@
+import type { CaseStyle, ResponseStructureConfig } from './common'
 import { Cursor, Pagination } from './pagination'
+
+export interface ResourceLevelConfig {
+    preferredCase?: CaseStyle | undefined
+    responseStructure?: ResponseStructureConfig | undefined
+}
 
 export interface MetaData {
     [key: string]: any;
@@ -53,12 +59,12 @@ export interface ResponseDataCollection<R extends Collectible | undefined = unde
 
 export type CollectionBody<R extends ResourceData[] | Collectible | CollectionLike | PaginatorLike = ResourceData[]> = ResponseDataCollection<
     R extends Collectible
-        ? R
-        : R extends PaginatorLike<infer TPaginatorData>
-            ? { data: TPaginatorData[] }
-        : R extends CollectionLike<infer T>
-            ? { data: T[] }
-            : { data: R }
+    ? R
+    : R extends PaginatorLike<infer TPaginatorData>
+    ? { data: TPaginatorData[] }
+    : R extends CollectionLike<infer T>
+    ? { data: T[] }
+    : { data: R }
 >
 
 export type ResourceBody<R extends ResourceData | NonCollectible = ResourceData> = ResponseData<
@@ -67,9 +73,9 @@ export type ResourceBody<R extends ResourceData | NonCollectible = ResourceData>
 
 export type GenericBody<R extends NonCollectible | Collectible | CollectionLike | PaginatorLike | ResourceData = ResourceData> = ResponseData<
     R extends PaginatorLike<infer TPaginatorData>
-        ? { data: TPaginatorData[] }
-        :
+    ? { data: TPaginatorData[] }
+    :
     R extends CollectionLike<infer T>
-        ? { data: T[] }
-        : R
+    ? { data: T[] }
+    : R
 >
