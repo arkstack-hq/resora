@@ -233,21 +233,25 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
   response (): ServerResponse<ResourceBody<R>>
   response (res: H3Event['res']): ServerResponse<ResourceBody<R>>
   response (res?: H3Event['res']): ServerResponse<ResourceBody<R>> {
-    this.called.toResponse = true
-
-    this.json()
-
     const rawResponse = res ?? this.res as never
-    const response = new ServerResponse(rawResponse, this.body)
-    this.withResponseContext = {
-      response,
-      raw: rawResponse,
-    }
 
-    this.called.withResponse = true
-    this.withResponse(response, rawResponse)
+    return this.runResponse({
+      ensureJson: () => this.json(),
+      rawResponse,
+      body: () => this.body,
+      createServerResponse: (raw, body) => {
+        const response = new ServerResponse(raw, body)
+        this.withResponseContext = {
+          response,
+          raw,
+        }
 
-    return response
+        return response
+      },
+      callWithResponse: (response, raw) => {
+        this.withResponse(response, raw)
+      },
+    })
   }
 
   /**
@@ -273,29 +277,28 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
     onfulfilled?: ((value: ResourceBody<R>) => TResult1 | PromiseLike<TResult1>) | null,
     onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null,
   ): Promise<TResult1 | TResult2> {
-    this.called.then = true
-    this.json()
+    return this.runThen({
+      ensureJson: () => this.json(),
+      body: () => this.body,
+      rawResponse: this.res,
+      createServerResponse: (raw, body) => {
+        const response = new ServerResponse(raw as never, body)
+        this.withResponseContext = {
+          response,
+          raw,
+        }
 
-    if (this.res) {
-      const response = new ServerResponse(this.res as never, this.body)
-      this.withResponseContext = {
-        response,
-        raw: this.res,
-      }
-      this.called.withResponse = true
-      this.withResponse(response, this.res)
-    } else {
-      this.called.withResponse = true
-      this.withResponse()
-    }
-
-    const resolved = Promise.resolve(this.body).then(onfulfilled, onrejected)
-
-    if (this.res) {
-      this.res.send(this.body)
-    }
-
-    return resolved
+        return response
+      },
+      callWithResponse: (response, raw) => {
+        this.withResponse(response, raw)
+      },
+      sendRawResponse: (raw, body) => {
+        raw.send(body)
+      },
+      onfulfilled,
+      onrejected,
+    })
   }
 
   /**
@@ -307,7 +310,27 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
   catch<TResult = never> (
     onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | null,
   ): Promise<ResourceBody<R> | TResult> {
-    return this.then(undefined, onrejected)
+    return this.runThen({
+      ensureJson: () => this.json(),
+      body: () => this.body,
+      rawResponse: this.res,
+      createServerResponse: (raw, body) => {
+        const response = new ServerResponse(raw as never, body)
+        this.withResponseContext = {
+          response,
+          raw,
+        }
+
+        return response
+      },
+      callWithResponse: (response, raw) => {
+        this.withResponse(response, raw)
+      },
+      sendRawResponse: (raw, body) => {
+        raw.send(body)
+      },
+      onrejected,
+    })
   }
 
   /**
@@ -317,6 +340,27 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
    * @returns 
    */
   finally (onfinally?: (() => void) | null) {
-    return this.then(onfinally, onfinally)
+    return this.runThen({
+      ensureJson: () => this.json(),
+      body: () => this.body,
+      rawResponse: this.res,
+      createServerResponse: (raw, body) => {
+        const response = new ServerResponse(raw as never, body)
+        this.withResponseContext = {
+          response,
+          raw,
+        }
+
+        return response
+      },
+      callWithResponse: (response, raw) => {
+        this.withResponse(response, raw)
+      },
+      sendRawResponse: (raw, body) => {
+        raw.send(body)
+      },
+      onfulfilled: onfinally as any,
+      onrejected: onfinally as any,
+    })
   }
 }

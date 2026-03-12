@@ -297,21 +297,25 @@ export class GenericResource<
   response (): ServerResponse<GenericBody<R>>
   response (res: H3Event['res']): ServerResponse<GenericBody<R>>
   response (res?: H3Event['res']): ServerResponse<GenericBody<R>> {
-    this.called.toResponse = true
-
-    this.json()
-
     const rawResponse = res ?? this.res as never
-    const response = new ServerResponse(rawResponse, this.body)
-    this.withResponseContext = {
-      response,
-      raw: rawResponse,
-    }
 
-    this.called.withResponse = true
-    this.withResponse(response, rawResponse)
+    return this.runResponse({
+      ensureJson: () => this.json(),
+      rawResponse,
+      body: () => this.body,
+      createServerResponse: (raw, body) => {
+        const response = new ServerResponse(raw, body)
+        this.withResponseContext = {
+          response,
+          raw,
+        }
 
-    return response
+        return response
+      },
+      callWithResponse: (response, raw) => {
+        this.withResponse(response, raw)
+      },
+    })
   }
 
   /**
@@ -337,28 +341,90 @@ export class GenericResource<
     onfulfilled?: ((value: GenericBody<R>) => TResult1 | PromiseLike<TResult1>) | null,
     onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null,
   ): Promise<TResult1 | TResult2> {
-    this.called.then = true
-    this.json()
+    return this.runThen({
+      ensureJson: () => this.json(),
+      body: () => this.body,
+      rawResponse: this.res,
+      createServerResponse: (raw, body) => {
+        const response = new ServerResponse(raw as never, body)
+        this.withResponseContext = {
+          response,
+          raw,
+        }
 
-    if (this.res) {
-      const response = new ServerResponse(this.res as never, this.body)
-      this.withResponseContext = {
-        response,
-        raw: this.res,
-      }
-      this.called.withResponse = true
-      this.withResponse(response, this.res)
-    } else {
-      this.called.withResponse = true
-      this.withResponse()
-    }
+        return response
+      },
+      callWithResponse: (response, raw) => {
+        this.withResponse(response, raw)
+      },
+      sendRawResponse: (raw, body) => {
+        raw.send(body)
+      },
+      onfulfilled,
+      onrejected,
+    })
+  }
 
-    const resolved = Promise.resolve(this.body).then(onfulfilled, onrejected)
+  /**
+   * Promise-like catch method to handle rejected state of the promise
+   *
+   * @param onrejected
+   * @returns
+   */
+  catch<TResult = never> (
+    onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | null,
+  ): Promise<GenericBody<R> | TResult> {
+    return this.runThen({
+      ensureJson: () => this.json(),
+      body: () => this.body,
+      rawResponse: this.res,
+      createServerResponse: (raw, body) => {
+        const response = new ServerResponse(raw as never, body)
+        this.withResponseContext = {
+          response,
+          raw,
+        }
 
-    if (this.res) {
-      this.res.send(this.body)
-    }
+        return response
+      },
+      callWithResponse: (response, raw) => {
+        this.withResponse(response, raw)
+      },
+      sendRawResponse: (raw, body) => {
+        raw.send(body)
+      },
+      onrejected,
+    })
+  }
 
-    return resolved
+  /**
+   * Promise-like finally method to handle cleanup after promise is settled
+   *
+   * @param onfinally
+   * @returns
+   */
+  finally (onfinally?: (() => void) | null) {
+    return this.runThen({
+      ensureJson: () => this.json(),
+      body: () => this.body,
+      rawResponse: this.res,
+      createServerResponse: (raw, body) => {
+        const response = new ServerResponse(raw as never, body)
+        this.withResponseContext = {
+          response,
+          raw,
+        }
+
+        return response
+      },
+      callWithResponse: (response, raw) => {
+        this.withResponse(response, raw)
+      },
+      sendRawResponse: (raw, body) => {
+        raw.send(body)
+      },
+      onfulfilled: onfinally as any,
+      onrejected: onfinally as any,
+    })
   }
 }

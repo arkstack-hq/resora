@@ -87,6 +87,60 @@ export abstract class BaseSerializer<TResource = any> {
         return mergeMetadata(hookMeta, this.additionalMeta)
     }
 
+    protected runResponse<TBody, TRawResponse, TServerResponse> (input: {
+        ensureJson: () => void
+        rawResponse: TRawResponse
+        body: () => TBody
+        createServerResponse: (raw: TRawResponse, body: TBody) => TServerResponse
+        callWithResponse: (response: TServerResponse, raw: TRawResponse) => void
+    }) {
+        this.called.toResponse = true
+        input.ensureJson()
+
+        const resolvedBody = input.body()
+        const response = input.createServerResponse(input.rawResponse, resolvedBody)
+
+        this.called.withResponse = true
+        input.callWithResponse(response, input.rawResponse)
+
+        return response
+    }
+
+    protected runThen<TBody, TRawResponse, TServerResponse, TResult1, TResult2> (input: {
+        ensureJson: () => void
+        body: () => TBody
+        rawResponse?: TRawResponse
+        createServerResponse: (raw: TRawResponse, body: TBody) => TServerResponse
+        callWithResponse: (response?: TServerResponse, raw?: TRawResponse) => void
+        sendRawResponse?: (raw: TRawResponse, body: TBody) => void
+        onfulfilled?: ((value: TBody) => TResult1 | PromiseLike<TResult1>) | null
+        onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null
+    }) {
+        this.called.then = true
+        input.ensureJson()
+
+        const initialBody = input.body()
+
+        if (typeof input.rawResponse !== 'undefined') {
+            const response = input.createServerResponse(input.rawResponse, initialBody)
+
+            this.called.withResponse = true
+            input.callWithResponse(response, input.rawResponse)
+        } else {
+            this.called.withResponse = true
+            input.callWithResponse()
+        }
+
+        const resolvedBody = input.body()
+        const resolved = Promise.resolve(resolvedBody).then(input.onfulfilled, input.onrejected)
+
+        if (typeof input.rawResponse !== 'undefined' && input.sendRawResponse) {
+            input.sendRawResponse(input.rawResponse, resolvedBody)
+        }
+
+        return resolved
+    }
+
     config (): ResourceLevelConfig
     config (config: ResourceLevelConfig): this
     config (config?: ResourceLevelConfig): ResourceLevelConfig | this {
