@@ -1,14 +1,17 @@
 import {
     CaseStyle,
+    MetaData,
     ResourceLevelConfig,
     ResponseStructureConfig,
 } from './types'
 import {
     getGlobalCase,
     getGlobalResponseStructure,
+    mergeMetadata,
     resolveMergeWhen,
     resolveWhen,
     resolveWhenNotNull,
+    resolveWithHookMetadata,
 } from './utilities'
 
 interface SerializerConstructor {
@@ -17,12 +20,13 @@ interface SerializerConstructor {
     config?: () => ResourceLevelConfig
 }
 
-export abstract class BaseSerializer {
+export abstract class BaseSerializer<TResource = any> {
     static preferredCase?: CaseStyle
     static responseStructure?: ResponseStructureConfig
     static config?: () => ResourceLevelConfig
 
     protected instanceConfig?: ResourceLevelConfig
+    protected additionalMeta?: MetaData
     protected called: {
         json?: boolean
         data?: boolean
@@ -45,6 +49,42 @@ export abstract class BaseSerializer {
 
     mergeWhen<T extends Record<string, any>> (condition: any, value: T | (() => T)): Partial<T> {
         return resolveMergeWhen(condition, value)
+    }
+
+    protected abstract resolveCurrentRootKey (): string
+    protected abstract applyMetaToBody (meta: MetaData, rootKey: string): void
+    protected abstract getResourceForMeta (): TResource
+
+    with (meta?: any): any {
+        this.called.with = true
+
+        if (typeof meta === 'undefined') {
+            return this.additionalMeta || {}
+        }
+
+        const resolvedMeta = typeof meta === 'function'
+            ? (meta(this.getResourceForMeta()) as MetaData)
+            : meta
+
+        this.additionalMeta = mergeMetadata(this.additionalMeta, resolvedMeta)
+
+        if (this.called.json) {
+            this.applyMetaToBody(resolvedMeta, this.resolveCurrentRootKey())
+        }
+
+        return this
+    }
+
+    withMeta<M extends MetaData> (meta: M | ((resource: TResource) => M)) {
+        this.with(meta)
+
+        return this
+    }
+
+    protected resolveMergedMeta (withMethod: (meta?: any) => any) {
+        const hookMeta = resolveWithHookMetadata(this, withMethod)
+
+        return mergeMetadata(hookMeta, this.additionalMeta)
     }
 
     config (): ResourceLevelConfig

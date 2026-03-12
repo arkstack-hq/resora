@@ -19,9 +19,7 @@ import {
   getCaseTransformer,
   getPaginationExtraKeys,
   isArkormLikeCollection,
-  mergeMetadata,
   normalizeSerializableData,
-  resolveWithHookMetadata,
   sanitizeConditionalAttributes,
   transformKeys,
 } from './utilities'
@@ -32,12 +30,11 @@ import {
 export class ResourceCollection<
   R extends ResourceData[] | Collectible | CollectionLike | PaginatorLike = ResourceData[] | Collectible | CollectionLike | PaginatorLike,
   T extends ResourceData = any
-> extends BaseSerializer {
+> extends BaseSerializer<R> {
   [key: string]: any;
   private body: CollectionBody<R> = { data: [] as any }
   public resource: R
   public collects?: typeof Resource<T>
-  private additionalMeta?: MetaData
   protected withResponseContext?: {
     response: ServerResponse<CollectionBody<R>>
     raw: Response | H3Event['res']
@@ -124,6 +121,18 @@ export class ResourceCollection<
     )
   }
 
+  protected resolveCurrentRootKey () {
+    return this.resolveResponseStructure().rootKey
+  }
+
+  protected applyMetaToBody (meta: MetaData, rootKey: string) {
+    this.body = appendRootProperties(this.body, meta, rootKey) as CollectionBody<R>
+  }
+
+  protected getResourceForMeta () {
+    return this.resource
+  }
+
   private getPayloadKey () {
     const { wrap, rootKey, factory } = this.resolveResponseStructure()
 
@@ -169,8 +178,7 @@ export class ResourceCollection<
         data = transformKeys(data, transformer) as CollectionBody<R>['data']
       }
 
-      const hookMeta = resolveWithHookMetadata(this, ResourceCollection.prototype.with)
-      const customMeta = mergeMetadata(hookMeta, this.additionalMeta)
+      const customMeta = this.resolveMergedMeta(ResourceCollection.prototype.with)
 
       const { wrap, rootKey, factory } = this.resolveResponseStructure()
       this.body = buildResponseEnvelope({
@@ -195,45 +203,6 @@ export class ResourceCollection<
         rootKey
       ) as CollectionBody<R>
     }
-
-    return this
-  }
-
-  /**
-   * Append structured metadata to the response body.
-   *
-   * @param meta  Metadata object or metadata factory
-   * @returns
-   */
-  with (meta?: any): any {
-    this.called.with = true
-
-    if (typeof meta === 'undefined') {
-      return this.additionalMeta || {}
-    }
-
-    const resolvedMeta = typeof meta === 'function'
-      ? (meta(this.resource) as MetaData)
-      : meta
-
-    this.additionalMeta = mergeMetadata(this.additionalMeta, resolvedMeta)
-
-    if (this.called.json) {
-      const { rootKey } = this.resolveResponseStructure()
-      this.body = appendRootProperties(this.body, resolvedMeta, rootKey) as CollectionBody<R>
-    }
-
-    return this
-  }
-
-  /**
-   * Typed fluent metadata helper.
-   *
-   * @param meta  Metadata object or metadata factory
-   * @returns
-   */
-  withMeta<M extends MetaData> (meta: M | ((resource: R) => M)) {
-    this.with(meta)
 
     return this
   }
