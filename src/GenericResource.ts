@@ -28,6 +28,10 @@ import {
 
 /**
  * GenericResource class to handle API resource transformation and response building
+ * 
+ * @author Legacy (3m1n3nc3)
+ * @since 0.1.0
+ * @see BaseSerializer for shared serialization logic and configuration handling
  */
 export class GenericResource<
   R extends NonCollectible | Collectible | CollectionLike | PaginatorLike | ResourceData = ResourceData,
@@ -158,14 +162,30 @@ export class GenericResource<
     )
   }
 
+  /**
+   * Resolve the current root key for the response structure, based on configuration and defaults.
+   * 
+   * @returns 
+   */
   protected resolveCurrentRootKey () {
     return this.resolveResponseStructure().rootKey
   }
 
+  /**
+   * Apply metadata properties to the response body, ensuring they are merged with.
+   * 
+   * @param meta 
+   * @param rootKey 
+   */
   protected applyMetaToBody (meta: MetaData, rootKey: string) {
     this.body = appendRootProperties(this.body, meta, rootKey) as GenericBody<R>
   }
 
+  /**
+   * Get the resource data to be used for generating metadata.
+   * 
+   * @returns 
+   */
   protected getResourceForMeta () {
     return this.resource
   }
@@ -247,12 +267,12 @@ export class GenericResource<
   }
 
   /**
-   * Convert resource to array format (for collections)
+   * Convert resource to object format (for collections).
    *
    * @returns
    */
-  toArray () {
-    this.called.toArray = true
+  toObject () {
+    this.called.toObject = true
     this.json()
 
     let data: any = normalizeSerializableData(this.resource)
@@ -262,6 +282,19 @@ export class GenericResource<
     }
 
     return data
+  }
+
+  /**
+   * Convert resource to object format and return original data.
+   * 
+   * @deprecated Use toObject() instead.
+   * @alias toArray
+   * @since 0.2.9
+   */
+  toArray () {
+    this.called.toArray = true
+
+    return this.toObject()
   }
 
   /**
@@ -294,8 +327,22 @@ export class GenericResource<
     return this
   }
 
+  /**
+   * Build a response object, optionally accepting a raw response to write to directly.
+   */
   response (): ServerResponse<GenericBody<R>>
+  /**
+   * Build a response object, writing to the provided raw response if possible.
+   * 
+   * @param res 
+   */
   response (res: H3Event['res']): ServerResponse<GenericBody<R>>
+  /**
+   * Build a response object, writing to the provided raw response if possible.
+   * 
+   * @param res 
+   * @returns 
+   */
   response (res?: H3Event['res']): ServerResponse<GenericBody<R>> {
     const rawResponse = res ?? this.res as never
 

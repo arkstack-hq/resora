@@ -25,7 +25,12 @@ import {
 } from './utilities'
 
 /**
- * ResourceCollection class to handle API resource transformation and response building for collections
+ * ResourceCollection class to handle API resource transformation and response building 
+ * for collections
+ * 
+ * @author Legacy (3m1n3nc3)
+ * @since 0.1.0
+ * @see BaseSerializer for shared serialization logic and configuration handling
  */
 export class ResourceCollection<
   R extends ResourceData[] | Collectible | CollectionLike | PaginatorLike = ResourceData[] | Collectible | CollectionLike | PaginatorLike,
@@ -40,7 +45,13 @@ export class ResourceCollection<
     raw: Response | H3Event['res']
   }
 
-  private isPaginatedCollectible (value: unknown): value is Collectible {
+  /**
+   * Type guard to determine if the provided value is a Collectible with pagination information.
+   * 
+   * @param value The value to check.
+   * @returns     True if the value is a Collectible with pagination information, false otherwise.
+   */
+  isPaginatedCollectible (value: unknown): value is Collectible {
     if (!value || typeof value !== 'object') {
       return false
     }
@@ -73,7 +84,7 @@ export class ResourceCollection<
    * Get the original resource data
    */
   data () {
-    return this.toArray()
+    return this.toObject()
   }
 
   /**
@@ -121,18 +132,42 @@ export class ResourceCollection<
     )
   }
 
+  /**
+   * Resolve the current root key for the response structure, based on configuration and defaults.
+   * 
+   * @returns 
+   */
   protected resolveCurrentRootKey () {
     return this.resolveResponseStructure().rootKey
   }
 
+  /**
+   * Apply metadata properties to the response body, ensuring they are merged with 
+   * any existing properties and respecting the configured root key.
+   * 
+   * @param meta 
+   * @param rootKey 
+   */
   protected applyMetaToBody (meta: MetaData, rootKey: string) {
     this.body = appendRootProperties(this.body, meta, rootKey) as CollectionBody<R>
   }
 
+  /**
+   * Get the resource data to be used for generating metadata, allowing for 
+   * customization in subclasses.
+   * 
+   * @returns 
+   */
   protected getResourceForMeta () {
     return this.resource
   }
 
+  /**
+   * Get the appropriate key for the response payload based on the current response 
+   * structure configuration.
+   * 
+   * @returns The key to use for the response payload, or undefined if no key is needed.
+   */
   private getPayloadKey () {
     const { wrap, rootKey, factory } = this.resolveResponseStructure()
 
@@ -208,9 +243,39 @@ export class ResourceCollection<
   }
 
   /**
-   * Flatten resource to return original data
+   * Convert resource to object format and return original data.
    *
    * @returns
+   */
+  toObject (): (
+    R extends Collectible
+    ? R['data'][number]
+    : R extends PaginatorLike<infer TPaginatorData>
+    ? TPaginatorData
+    : R extends CollectionLike<infer TCollectionData>
+    ? TCollectionData
+    : R extends ResourceData[]
+    ? R[number]
+    : never
+  )[] {
+    this.called.toObject = true
+    this.json()
+
+    const source = Array.isArray(this.resource)
+      ? this.resource
+      : isArkormLikeCollection(this.resource)
+        ? this.resource.all()
+        : this.resource.data as never[]
+
+    return normalizeSerializableData(source) as never
+  }
+
+  /**
+   * Convert resource to object format and return original data.
+   * 
+   * @deprecated Use toObject() instead.
+   * @alias toArray
+   * @since 0.2.9
    */
   toArray (): (
     R extends Collectible
@@ -224,15 +289,8 @@ export class ResourceCollection<
     : never
   )[] {
     this.called.toArray = true
-    this.json()
 
-    const source = Array.isArray(this.resource)
-      ? this.resource
-      : isArkormLikeCollection(this.resource)
-        ? this.resource.all()
-        : this.resource.data as never[]
-
-    return normalizeSerializableData(source) as never
+    return this.toObject()
   }
 
   /**

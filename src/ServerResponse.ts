@@ -3,6 +3,13 @@ import { Collectible, NonCollectible, ResourceData } from './types'
 import type { H3Event } from 'h3'
 import type { Response } from 'express'
 
+/**
+ * ServerResponse class to handle HTTP response construction and sending, compatible 
+ * with both Express and H3 response objects.
+ * 
+ * @author Legacy (3m1n3nc3)
+ * @since 0.1.0
+ */
 export class ServerResponse<
     R extends
     | NonCollectible

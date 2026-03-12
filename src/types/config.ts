@@ -111,6 +111,27 @@ export interface Config {
     extraCommands?: typeof Command<any>[]
 }
 
+/**
+ * @description A type that represents the configuration options that can be set at the resource level, allowing for customization of case style, response structure, and additional data included in paginated responses on a per-resource basis.
+ */
+export interface ResourceLevelConfig {
+    /**
+     * @description The preferred case style for resource keys in the response.
+     * Can be set to a preset string ('camel', 'snake', 'pascal', 'kebab') or a custom transformer function.
+     * @default 'camel'
+     */
+    preferredCase?: CaseStyle | undefined
+    /**
+     * @description An object specifying the structure of the response body for resources. It includes a rootKey property that defines the key under which the resource data will be nested in the response. The rootKey is a string that represents the name of this key in the response body.
+     */
+    responseStructure?: ResponseStructureConfig | undefined
+    /**
+     * @description An array or object specifying which additional data to include in paginated responses.
+     * Can include 'meta', 'links', and/or 'cursor'. If an object is provided, the keys can be customized to specify the property names for each type of extra data in the response.
+     * @default ['meta', 'links']
+     */
+    paginatedExtras?: Config['paginatedExtras'] | undefined
+}
 
 export interface ResoraConfig extends Partial<Omit<Config, |
     'stubs' | 'cursorMeta' | 'paginatedMeta' | 'paginatedLinks' | 'responseStructure'

@@ -24,6 +24,11 @@ import {
 
 /**
  * Resource class to handle API resource transformation and response building
+ * 
+ * 
+ * @author Legacy (3m1n3nc3)
+ * @since 0.1.0
+ * @see BaseSerializer for shared serialization logic and configuration handling
  */
 export class Resource<R extends ResourceData | NonCollectible = ResourceData> extends BaseSerializer<R> {
   [key: string]: any;
@@ -97,7 +102,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
    * Get the original resource data
    */
   data () {
-    return this.toArray()
+    return this.toObject()
   }
 
   /**
@@ -122,6 +127,11 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
     return this.resolveSerializerResponseStructure(this.constructor as typeof Resource)
   }
 
+  /**
+   * Resolve the current root key for the response body based on configuration and defaults.
+   * 
+   * @returns 
+   */
   protected resolveCurrentRootKey () {
     return this.resolveResponseStructure().rootKey
   }
@@ -187,12 +197,12 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
   }
 
   /**
-   * Flatten resource to array format (for collections) or return original data for single resources
+   * Convert resource to object format (for collections) or return original data for single resources.
    *
    * @returns
    */
-  toArray (): R extends NonCollectible ? R['data'] : R {
-    this.called.toArray = true
+  toObject (): R extends NonCollectible ? R['data'] : R {
+    this.called.toObject = true
     this.json()
 
     let data = normalizeSerializableData(this.resource) as any
@@ -202,6 +212,19 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
     }
 
     return data as never
+  }
+
+  /**
+   * Convert resource to object format and return original data.
+   * 
+   * @deprecated Use toObject() instead.
+   * @alias toArray
+   * @since 0.2.9
+   */
+  toArray (): R extends NonCollectible ? R['data'] : R {
+    this.called.toArray = true
+
+    return this.toObject()
   }
 
   /**
@@ -230,8 +253,21 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
     return this
   }
 
+  /**
+   * Build a response object, optionally accepting a raw response to mutate in withResponse.
+   */
   response (): ServerResponse<ResourceBody<R>>
+  /**
+   * Build a response object, optionally accepting a raw response to mutate in withResponse.
+   * @param res Optional raw response object (e.g. Express Response or H3Event res)
+   */
   response (res: H3Event['res']): ServerResponse<ResourceBody<R>>
+  /**
+   * Build a response object, optionally accepting a raw response to mutate in withResponse.
+   * 
+   * @param res Optional raw response object (e.g. Express Response or H3Event res)
+   * @returns 
+   */
   response (res?: H3Event['res']): ServerResponse<ResourceBody<R>> {
     const rawResponse = res ?? this.res as never
 

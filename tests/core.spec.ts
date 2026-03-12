@@ -16,6 +16,20 @@ describe('Core', () => {
         expect(jsonResource.data()).toEqual(resource)
     })
 
+    it('should expose toObject as primary serializer method', () => {
+        const resource = { id: 1, name: 'Test Resource' }
+        const jsonResource = new Resource(resource)
+
+        expect(jsonResource.toObject()).toEqual(resource)
+    })
+
+    it('should keep toArray as a backward-compatible alias for toObject', () => {
+        const resource = { id: 1, name: 'Test Resource' }
+        const jsonResource = new Resource(resource)
+
+        expect(jsonResource.toArray()).toEqual(jsonResource.toObject())
+    })
+
     it('should convert resource to JSON response format', () => {
         const resource = { id: 1, name: 'Test Resource' }
         const jsonResource = new Resource(resource)
@@ -77,7 +91,7 @@ describe('Extending Resources', () => {
     it('should allow extending the Resource class', () => {
         class CustomResource extends Resource {
             data () {
-                return this.toArray()
+                return this.toObject()
             }
         }
 
@@ -108,7 +122,7 @@ describe('Extending Resources', () => {
     it('should allow chaining of methods in extended classes', () => {
         class CustomResource extends Resource {
             data () {
-                return this.toArray()
+                return this.toObject()
             }
         }
 
@@ -157,7 +171,7 @@ describe('Extending Collections', () => {
             collects = CustomResource
 
             data () {
-                return this.toArray()
+                return this.toObject()
             }
         }
 
@@ -181,7 +195,7 @@ describe('Extending Collections', () => {
             collects = CustomResource
 
             data () {
-                return this.toArray()
+                return this.toObject()
             }
         }
 
@@ -209,7 +223,7 @@ describe('Extending Collections', () => {
             collects = CustomResource
 
             data () {
-                return this.toArray()
+                return this.toObject()
             }
         }
 
@@ -237,7 +251,7 @@ describe('Extending Collections', () => {
             collects = CustomResource
 
             data () {
-                return this.toArray()
+                return this.toObject()
             }
         }
 
@@ -269,7 +283,7 @@ describe('Extending Collections', () => {
             collects = CustomResource
 
             data () {
-                return this.toArray()
+                return this.toObject()
             }
         }
 

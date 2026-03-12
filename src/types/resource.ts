@@ -1,10 +1,4 @@
-import type { CaseStyle, ResponseStructureConfig } from './common'
 import { Cursor, Pagination } from './pagination'
-
-export interface ResourceLevelConfig {
-    preferredCase?: CaseStyle | undefined
-    responseStructure?: ResponseStructureConfig | undefined
-}
 
 export interface MetaData {
     [key: string]: any;

@@ -8,6 +8,11 @@ if (!existsSync(stubsDir)) {
     stubsDir = path.resolve(process.cwd(), 'stubs')
 }
 
+/**
+ * Get the default configuration for the application
+ * 
+ * @returns 
+ */
 export const getDefaultConfig = (): Config => {
     return {
         stubsDir,

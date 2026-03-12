@@ -1,5 +1,5 @@
-import { GenericResource, ResourceData } from 'src'
 import { ArkormCollection, Model } from 'arkormx'
+import { GenericResource, ResourceData } from 'src'
 import { describe, expect, it } from 'vitest'
 
 class TestArkormModel extends Model<Record<string, unknown>> {
@@ -12,6 +12,20 @@ describe('Generic Core', () => {
 
         expect(jsonResource).toBeInstanceOf(GenericResource)
         expect(jsonResource.data()).toEqual(resourceData)
+    })
+
+    it('should expose toObject as primary serializer method', () => {
+        const resourceData: ResourceData = { id: 1, name: 'Test Resource' }
+        const jsonResource = new GenericResource(resourceData)
+
+        expect(jsonResource.toObject()).toEqual(resourceData)
+    })
+
+    it('should keep toArray as a backward-compatible alias for toObject', () => {
+        const resourceData: ResourceData = { id: 1, name: 'Test Resource' }
+        const jsonResource = new GenericResource(resourceData)
+
+        expect(jsonResource.toArray()).toEqual(jsonResource.toObject())
     })
 
     it('should allow access to resource properties directly on the instance', () => {

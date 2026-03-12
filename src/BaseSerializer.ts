@@ -20,6 +20,16 @@ interface SerializerConstructor {
     config?: () => ResourceLevelConfig
 }
 
+/**
+ * @description BaseSerializer is an abstract class that provides common functionality for
+ * serializing resources. It handles configuration, metadata management, and response 
+ * structure resolution. Concrete serializers should extend this class and implement 
+ * the abstract methods to define how resources are transformed and how metadata is 
+ * applied to the response body.
+ * 
+ * @author Legacy (3m1n3nc3)
+ * @since 0.2.8
+ */
 export abstract class BaseSerializer<TResource = any> {
     static preferredCase?: CaseStyle
     static responseStructure?: ResponseStructureConfig
@@ -30,6 +40,7 @@ export abstract class BaseSerializer<TResource = any> {
     protected called: {
         json?: boolean
         data?: boolean
+        toObject?: boolean
         toArray?: boolean
         additional?: boolean
         with?: boolean
@@ -39,22 +50,51 @@ export abstract class BaseSerializer<TResource = any> {
         toResponse?: boolean
     } = {}
 
+    /**
+     * Helper method to conditionally resolve a value based on a condition. 
+     * 
+     * @param condition 
+     * @param value 
+     * @returns 
+     */
     when<T> (condition: any, value: T | (() => T)): T | undefined {
         return resolveWhen(condition, value) as T | undefined
     }
 
+    /**
+     * Helper method to conditionally resolve a value only if it's not null or undefined.
+     * 
+     * @param value 
+     * @returns 
+     */
     whenNotNull<T> (value: T | null | undefined): T | undefined {
         return resolveWhenNotNull(value) as T | undefined
     }
 
+    /**
+     * Helper method to conditionally merge values into the response based on a condition.
+     * 
+     * @param condition 
+     * @param value 
+     * @returns 
+     */
     mergeWhen<T extends Record<string, any>> (condition: any, value: T | (() => T)): Partial<T> {
         return resolveMergeWhen(condition, value)
     }
 
+    /**
+     * Resolve the current root key for the response structure. 
+     */
     protected abstract resolveCurrentRootKey (): string
     protected abstract applyMetaToBody (meta: MetaData, rootKey: string): void
     protected abstract getResourceForMeta (): TResource
 
+    /**
+     * Add additional metadata to the response. If called without arguments.
+     * 
+     * @param meta 
+     * @returns 
+     */
     with (meta?: any): any {
         this.called.with = true
 
@@ -75,18 +115,37 @@ export abstract class BaseSerializer<TResource = any> {
         return this
     }
 
+    /**
+     * Add additional metadata to the response, ensuring it is merged with any existing metadata.
+     * 
+     * @param meta 
+     * @returns 
+     */
     withMeta<M extends MetaData> (meta: M | ((resource: TResource) => M)) {
         this.with(meta)
 
         return this
     }
 
+    /**
+     * Resolve the merged metadata for the current response, combining any metadata 
+     * defined in hooks with additional metadata added via with() or withMeta().
+     * 
+     * @param withMethod 
+     * @returns 
+     */
     protected resolveMergedMeta (withMethod: (meta?: any) => any) {
         const hookMeta = resolveWithHookMetadata(this, withMethod)
 
         return mergeMetadata(hookMeta, this.additionalMeta)
     }
 
+    /**
+     * Run the response generation process, ensuring that the response is properly structured.
+     * 
+     * @param input 
+     * @returns 
+     */
     protected runResponse<TBody, TRawResponse, TServerResponse> (input: {
         ensureJson: () => void
         rawResponse: TRawResponse
@@ -106,6 +165,13 @@ export abstract class BaseSerializer<TResource = any> {
         return response
     }
 
+    /**
+     * Run the thenable process for the resource, allowing for async handling and 
+     * response generation.
+     * 
+     * @param input 
+     * @returns 
+     */
     protected runThen<TBody, TRawResponse, TServerResponse, TResult1, TResult2> (input: {
         ensureJson: () => void
         body: () => TBody
@@ -141,8 +207,22 @@ export abstract class BaseSerializer<TResource = any> {
         return resolved
     }
 
+    /**
+     * Get or set the resource-level configuration for this serializer instance. 
+     */
     config (): ResourceLevelConfig
+    /**
+     * Set the resource-level configuration for this serializer instance.
+     * 
+     * @param config The configuration object to set for this serializer instance.
+     */
     config (config: ResourceLevelConfig): this
+    /**
+     * Get or set the resource-level configuration for this serializer instance.
+     * 
+     * @param config The configuration object to set for this serializer instance, or undefined to get the current configuration.
+     * @returns 
+     */
     config (config?: ResourceLevelConfig): ResourceLevelConfig | this {
         if (typeof config === 'undefined') {
             return this.instanceConfig || {}
@@ -160,6 +240,14 @@ export abstract class BaseSerializer<TResource = any> {
         return this
     }
 
+    /**
+     * Resolve the effective serializer configuration for this instance, combining 
+     * class-level and instance-level configurations.
+     * 
+     * @param localConstructor 
+     * @param _fallbackConfig 
+     * @returns 
+     */
     protected resolveSerializerConfig (
         localConstructor: SerializerConstructor,
         _fallbackConfig?: ResourceLevelConfig
@@ -178,6 +266,14 @@ export abstract class BaseSerializer<TResource = any> {
         }
     }
 
+    /**
+     * Resolve the preferred case style for this serializer instance, considering 
+     * instance-level configuration, class-level configuration, and global defaults.
+     * 
+     * @param localConstructor The constructor of the serializer class.
+     * @param fallbackConfig    The fallback configuration to use if no other configuration is found.
+     * @returns The resolved    case style for this serializer instance.
+     */
     protected resolveSerializerCaseStyle (
         localConstructor: SerializerConstructor,
         fallbackConfig?: ResourceLevelConfig
@@ -190,6 +286,13 @@ export abstract class BaseSerializer<TResource = any> {
             ?? getGlobalCase()
     }
 
+    /**
+     * Resolve the response structure configuration for this serializer instance, considering
+     * 
+     * @param localConstructor 
+     * @param fallbackConfig 
+     * @returns 
+     */
     protected resolveSerializerResponseStructure (
         localConstructor: SerializerConstructor,
         fallbackConfig?: ResourceLevelConfig

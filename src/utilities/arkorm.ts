@@ -11,6 +11,14 @@ type ArkormLikeCollection = {
     all: () => unknown
 }
 
+/**
+ * Type guard to check if a value is an Arkorm-like model, which is defined as an object 
+ * that has a toObject method and optionally getRawAttributes, getAttribute, and 
+ * setAttribute methods.
+ * 
+ * @param value  The value to check
+ * @returns True if the value is an Arkorm-like model, false otherwise
+ */
 export const isArkormLikeModel = (value: unknown): value is ArkormLikeModel => {
     if (!value || typeof value !== 'object') {
         return false
@@ -22,6 +30,12 @@ export const isArkormLikeModel = (value: unknown): value is ArkormLikeModel => {
         && typeof candidate.getRawAttributes === 'function'
 }
 
+/**
+ * Type guard to check if a value is an Arkorm-like collection, which is defined as an object
+ * 
+ * @param value 
+ * @returns 
+ */
 export const isArkormLikeCollection = (value: unknown): value is ArkormLikeCollection => {
     if (!value || typeof value !== 'object') {
         return false
@@ -32,6 +46,13 @@ export const isArkormLikeCollection = (value: unknown): value is ArkormLikeColle
     return typeof candidate.all === 'function'
 }
 
+/**
+ * Normalize a value for serialization by recursively converting Arkorm-like models and 
+ * collections to plain objects, while preserving the structure of arrays and plain objects.
+ * 
+ * @param value The value to normalize
+ * @returns The normalized value, ready for serialization
+ */
 export const normalizeSerializableData = (value: unknown): unknown => {
     if (Array.isArray(value)) {
         return value.map(item => normalizeSerializableData(item))
