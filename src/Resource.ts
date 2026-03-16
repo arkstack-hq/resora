@@ -284,7 +284,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
    * @returns 
    */
   response (res?: H3Event['res'] | Response): ServerResponse<ResourceBody<R>> {
-    const rawResponse = res ?? this.res ?? (Resource.ctx as any)?.res as never
+    const rawResponse = res ?? this.res ?? (Resource.ctx as any)?.res ?? Resource.ctx as never
 
     return this.runResponse({
       ensureJson: () => this.json(),
@@ -331,7 +331,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res ?? (Resource.ctx as any)?.res as never,
+      rawResponse: this.res ?? (Resource.ctx as any)?.res ?? Resource.ctx as never,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -364,7 +364,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res ?? (Resource.ctx as any)?.res as never,
+      rawResponse: this.res ?? (Resource.ctx as any)?.res ?? Resource.ctx as never,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -394,7 +394,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res ?? (Resource.ctx as any)?.res as never,
+      rawResponse: this.res ?? (Resource.ctx as any)?.res ?? Resource.ctx as never,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {

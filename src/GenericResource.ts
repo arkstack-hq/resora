@@ -359,7 +359,7 @@ export class GenericResource<
    * @returns 
    */
   response (res?: Response | H3Event['res']): ServerResponse<GenericBody<R>> {
-    const rawResponse = res ?? this.res ?? (GenericResource.ctx as any)?.res as never
+    const rawResponse = res ?? this.res ?? (GenericResource.ctx as any)?.res ?? GenericResource.ctx as never
 
     return this.runResponse({
       ensureJson: () => this.json(),
@@ -406,7 +406,7 @@ export class GenericResource<
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res ?? (GenericResource.ctx as any)?.res as never,
+      rawResponse: this.res ?? (GenericResource.ctx as any)?.res ?? GenericResource.ctx as never,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -439,7 +439,7 @@ export class GenericResource<
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res ?? (GenericResource.ctx as any)?.res as never,
+      rawResponse: this.res ?? (GenericResource.ctx as any)?.res ?? GenericResource.ctx as never,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -469,7 +469,7 @@ export class GenericResource<
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res ?? (GenericResource.ctx as any)?.res as never,
+      rawResponse: this.res ?? (GenericResource.ctx as any)?.res ?? GenericResource.ctx as never,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {

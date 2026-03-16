@@ -351,7 +351,7 @@ export class ResourceCollection<
    * @returns 
    */
   response (res?: H3Event['res'] | Response): ServerResponse<CollectionBody<R>> {
-    const rawResponse = res ?? this.res ?? (this.ctx as any)?.res as never
+    const rawResponse = res ?? this.res ?? (ResourceCollection.ctx as any)?.res ?? ResourceCollection.ctx as never
 
     return this.runResponse({
       ensureJson: () => this.json(),
@@ -404,7 +404,7 @@ export class ResourceCollection<
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res ?? (ResourceCollection.ctx as any)?.res as never,
+      rawResponse: this.res ?? (ResourceCollection.ctx as any)?.res ?? ResourceCollection.ctx as never,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -437,7 +437,7 @@ export class ResourceCollection<
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res ?? (ResourceCollection.ctx as any)?.res as never,
+      rawResponse: this.res ?? (ResourceCollection.ctx as any)?.res ?? ResourceCollection.ctx as never,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -467,7 +467,7 @@ export class ResourceCollection<
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res ?? (ResourceCollection.ctx as any)?.res as never,
+      rawResponse: this.res ?? (ResourceCollection.ctx as any)?.res ?? ResourceCollection.ctx as never,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
