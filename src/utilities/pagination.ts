@@ -253,12 +253,10 @@ export const buildPaginationExtras = (resource: any): Record<string, any> => {
     const linksBlock: Record<string, any> = {}
 
     if (pagination) {
-        // For Arkorm paginators, prefer the auto-detected request URL over the
-        // paginator's own path. Plain pagination data keeps the existing
-        // behaviour where an explicit path wins over the request URL.
-        const effectivePath = isArkormPaginatorLike
-            ? (getRequestUrl() || pagination.path)
-            : pagination.path
+        const effectivePath = getRequestUrl() || pagination.path
+        const currentPagePath = effectivePath
+            ? (buildPageUrl(pagination.currentPage, effectivePath) ?? effectivePath)
+            : undefined
 
         const linksSource: Record<string, any> = {
             first: hasPaginationLink(pagination, 'first')
@@ -285,7 +283,7 @@ export const buildPaginationExtras = (resource: any): Record<string, any> => {
             to: pagination.to,
             from: pagination.from,
             links: pagination.links || (isArkormPaginatorLike && Object.keys(resolvedLinks).length ? resolvedLinks : undefined),
-            path: pagination.path,
+            path: currentPagePath,
             total: pagination.total,
             per_page: pagination.perPage,
             last_page: pagination.lastPage,

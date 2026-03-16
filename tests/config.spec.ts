@@ -136,7 +136,7 @@ describe('Configuration', () => {
                 lastPage: 9,
                 perPage: 10,
                 total: 90,
-                endpoint: '/users',
+                endpoint: '/users?page=2',
             },
             links: {
                 last: '/users?page=9',

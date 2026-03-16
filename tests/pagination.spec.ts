@@ -46,7 +46,7 @@ describe('Resource Pagination', () => {
                 per_page: 10,
                 current_page: 1,
                 last_page: 10,
-                path: '/users',
+                path: '/users?page=1',
             },
         })
     })
@@ -110,7 +110,7 @@ describe('Resource Pagination', () => {
                 per_page: 10,
                 current_page: 1,
                 last_page: 1,
-                path: '/users',
+                path: '/users?page=1',
             },
         })
     })
@@ -139,7 +139,7 @@ describe('Resource Pagination', () => {
             },
             meta: {
                 current_page: 2,
-                path: '/users',
+                path: 'https://api.example.com/v1/users?p=2',
             },
         })
     })
@@ -442,7 +442,7 @@ describe('Resource Pagination', () => {
         })
     })
 
-    it('should prefer explicit pagination path over auto-detected URL', () => {
+    it('should prefer auto-detected URL over explicit pagination path', () => {
         ResourceCollection.setCtx({ req: { originalUrl: '/ignored' } })
 
         const resource = {
@@ -458,10 +458,11 @@ describe('Resource Pagination', () => {
 
         const jsonResponse = new ResourceCollection(resource).getBody()
         expect(jsonResponse.links).toEqual({
-            first: '/explicit-path?page=1',
-            last: '/explicit-path?page=2',
-            next: '/explicit-path?page=2',
+            first: '/ignored?page=1',
+            last: '/ignored?page=2',
+            next: '/ignored?page=2',
         })
+        expect(jsonResponse.meta?.path).toBe('/ignored?page=1')
     })
 
     it('should maintain backward compatibility with bare response parameter', () => {

@@ -135,7 +135,7 @@ describe('Arkorm integration', () => {
                 last_page: 5,
                 from: 3,
                 to: 4,
-                path: '/users',
+                path: '/users?page=2',
                 links: {
                     first: '/users?page=1',
                     last: '/users?page=5',
@@ -193,7 +193,7 @@ describe('Arkorm integration', () => {
                 current_page: 1,
                 from: 1,
                 to: 2,
-                path: '/users',
+                path: '/users?page=1',
                 links: {
                     prev: null,
                     next: '/users?page=2',
@@ -262,6 +262,7 @@ describe('Arkorm integration', () => {
                 prev: '/api/v2/users?search=foo&page=1',
                 next: '/api/v2/users?search=foo&page=3',
             })
+            expect((body.meta as any)?.path).toBe('/api/v2/users?search=foo&page=2')
         })
 
         it('auto-detects URL for plain pagination data with Arkorm models', () => {
@@ -297,6 +298,7 @@ describe('Arkorm integration', () => {
                 prev: '/api/users?page=1',
                 next: '/api/users?page=3',
             })
+            expect(body.meta?.path).toBe('/api/users?page=2')
         })
 
         it('auto-detects URL with query string for plain pagination with Arkorm models', () => {
@@ -325,6 +327,7 @@ describe('Arkorm integration', () => {
                 last: '/api/users?role=admin&sort=name&page=3',
                 next: '/api/users?role=admin&sort=name&page=2',
             })
+            expect(body.meta?.path).toBe('/api/users?role=admin&sort=name&page=1')
         })
 
         it('serializes Arkorm Paginator in GenericResource with H3-like { req, res } context', () => {

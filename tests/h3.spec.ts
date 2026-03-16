@@ -116,7 +116,7 @@ describe('H3 Requests', () => {
                 per_page: 10,
                 current_page: 1,
                 last_page: 10,
-                path: '/users',
+                path: '/users?page=1',
             },
         })
     })
@@ -165,7 +165,7 @@ describe('H3 Requests', () => {
                 per_page: 10,
                 current_page: 1,
                 last_page: 1,
-                path: '/users',
+                path: '/users?page=1',
             },
         })
     })
