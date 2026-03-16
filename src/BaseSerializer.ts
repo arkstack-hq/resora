@@ -13,6 +13,7 @@ import {
     resolveWhen,
     resolveWhenNotNull,
     resolveWithHookMetadata,
+    setCtx as setCtxState,
 } from './utilities'
 
 interface SerializerConstructor {
@@ -53,6 +54,19 @@ export abstract class BaseSerializer<TResource = any> {
 
     constructor() {
         void loadRuntimeConfig()
+    }
+
+    /**
+     * Sets the current request context for pagination URL detection.
+     * Call from middleware to make the request path available to all
+     * resources created during the request lifecycle.
+     * 
+     * Accepts an Express Request, H3Event, `{ req }` object, or a plain URL string.
+     * 
+     * @param ctx The request context.
+     */
+    static setCtx (ctx: unknown): void {
+        setCtxState(ctx)
     }
 
     /**

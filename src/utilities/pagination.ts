@@ -5,6 +5,7 @@ import {
     getGlobalPaginatedExtras,
     getGlobalPaginatedLinks,
     getGlobalPaginatedMeta,
+    getRequestUrl,
 } from './state'
 
 import { Config } from '../types'
@@ -39,10 +40,15 @@ export const getPaginationExtraKeys = (): {
 
 /**
  * Builds a pagination URL for a given page number and path, using the global base URL and page name configuration.
- * 
+ *
+ * URL resolution follows a three-tier priority:
+ * 1. Full URL – when `pathName` is absolute or `baseUrl` is set alongside a path
+ * 2. Path-relative – when only a path is available (e.g. `/users?page=2`)
+ * 3. Bare fallback – `/?page=X` when neither base URL nor path is available
+ *
  * @param page The page number for which to build the URL. If `undefined`, the function will return `undefined`.
- * @param pathName The path to use for the URL. If not provided, it will default to an empty string. 
- * @returns 
+ * @param pathName The path to use for the URL. If not provided, it will default to an empty string.
+ * @returns
  */
 const buildPageUrl = (
     page: number | undefined,
@@ -52,28 +58,50 @@ const buildPageUrl = (
         return undefined
     }
 
-    const rawPath = pathName || ''
+    const rawPath = pathName || getRequestUrl() || ''
     const base = getGlobalBaseUrl() || ''
+    const pageName = getGlobalPageName() || 'page'
 
-    const isAbsolutePath = /^https?:\/\//i.test(rawPath)
-    const normalizedBase = base.replace(/\/$/, '')
-    const normalizedPath = rawPath.replace(/^\//, '')
-    const root = isAbsolutePath
-        ? rawPath
-        : normalizedBase
-            ? normalizedPath
-                ? `${normalizedBase}/${normalizedPath}`
-                : normalizedBase
-            : ''
+    // Split rawPath into pathname and existing query string
+    const qIndex = rawPath.indexOf('?')
+    const pathOnly = qIndex >= 0 ? rawPath.slice(0, qIndex) : rawPath
+    const existingSearch = qIndex >= 0 ? rawPath.slice(qIndex + 1) : ''
 
-    if (!root) {
-        return undefined
+    // Tier 1a: path is already a full URL – use it directly
+    if (/^https?:\/\//i.test(pathOnly)) {
+        const url = new URL(rawPath)
+        url.searchParams.set(pageName, String(page))
+
+        return url.toString()
     }
 
-    const url = new URL(root)
-    url.searchParams.set(getGlobalPageName() || 'page', String(page))
+    const normalizedBase = base.replace(/\/$/, '')
+    const normalizedPath = pathOnly.replace(/^\//, '')
 
-    return url.toString()
+    // Tier 1b: base is a full URL – combine with path
+    if (/^https?:\/\//i.test(normalizedBase)) {
+        const root = normalizedPath
+            ? `${normalizedBase}/${normalizedPath}`
+            : normalizedBase
+        const url = new URL(root)
+        if (existingSearch) {
+            for (const [k, v] of new URLSearchParams(existingSearch)) {
+                url.searchParams.set(k, v)
+            }
+        }
+        url.searchParams.set(pageName, String(page))
+
+        return url.toString()
+    }
+
+    // Tier 2 / 3: path-relative or bare fallback
+    const segments = [normalizedBase, normalizedPath].filter(Boolean).join('/')
+    const pathBase = segments ? `/${segments}` : '/'
+
+    const params = new URLSearchParams(existingSearch)
+    params.set(pageName, String(page))
+
+    return `${pathBase}?${params.toString()}`
 }
 
 /**

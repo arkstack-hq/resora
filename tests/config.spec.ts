@@ -45,7 +45,7 @@ const resetGlobalConfigState = () => {
         previous: 'previous',
         next: 'next',
     })
-    setGlobalBaseUrl('https://localhost')
+    setGlobalBaseUrl('')
     setGlobalPageName('page')
 }
 
@@ -139,7 +139,7 @@ describe('Configuration', () => {
                 endpoint: '/users',
             },
             links: {
-                last: 'https://localhost/users?page=9',
+                last: '/users?page=9',
             },
         })
     })

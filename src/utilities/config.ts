@@ -22,7 +22,7 @@ export const getDefaultConfig = (): Config => {
             rootKey: 'data',
         },
         paginatedExtras: ['meta', 'links'],
-        baseUrl: 'https://localhost',
+        baseUrl: '',
         pageName: 'page',
         paginatedLinks: {
             first: 'first',

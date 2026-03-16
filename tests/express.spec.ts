@@ -101,7 +101,7 @@ describe('Connect-style Requests (Express)', () => {
         expect(response.body).toEqual({
             data: resource.data,
             links: {
-                last: 'https://localhost/users?page=10',
+                last: '/users?page=10',
             },
             meta: {
                 total: 100,
@@ -144,7 +144,7 @@ describe('Connect-style Requests (Express)', () => {
         expect(response.body).toEqual({
             data: resource.data,
             links: {
-                last: 'https://localhost/users?page=1',
+                last: '/users?page=1',
             },
             meta: {
                 total: 0,

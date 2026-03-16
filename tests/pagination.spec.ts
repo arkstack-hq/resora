@@ -1,20 +1,22 @@
-import { afterEach, describe, expect, it } from 'vitest'
-
 import {
+    GenericResource,
     Resource,
     ResourceCollection,
     setGlobalBaseUrl,
     setGlobalCursorMeta,
     setGlobalPageName,
     setGlobalPaginatedExtras,
+    setRequestUrl,
 } from 'src'
+import { afterEach, describe, expect, it } from 'vitest'
 
 describe('Resource Pagination', () => {
     afterEach(() => {
-        setGlobalBaseUrl('https://localhost')
+        setGlobalBaseUrl('')
         setGlobalPageName('page')
         setGlobalPaginatedExtras(['meta', 'links'])
         setGlobalCursorMeta({ previous: 'previous', next: 'next' })
+        setRequestUrl(undefined)
     })
 
     it('should handle pagination data correctly', () => {
@@ -35,7 +37,7 @@ describe('Resource Pagination', () => {
         expect(jsonResponse).toEqual({
             data: [{ id: 1 }, { id: 2 }],
             links: {
-                last: 'https://localhost/users?page=10',
+                last: '/users?page=10',
             },
             meta: {
                 total: 100,
@@ -99,7 +101,7 @@ describe('Resource Pagination', () => {
         expect(jsonResponse).toEqual({
             data: [],
             links: {
-                last: 'https://localhost/users?page=1',
+                last: '/users?page=1',
             },
             meta: {
                 total: 0,
@@ -173,6 +175,388 @@ describe('Resource Pagination', () => {
 
         expect(jsonResponse).toEqual({
             data: [{ id: 1 }, { id: 2 }],
+        })
+    })
+
+    it('should generate full URLs when baseUrl is configured', () => {
+        setGlobalBaseUrl('http://localhost:3000')
+
+        const resource = {
+            data: [{ id: 1 }],
+            pagination: {
+                currentPage: 2,
+                lastPage: 5,
+                nextPage: 3,
+                prevPage: 1,
+                firstPage: 1,
+                path: '/users',
+            },
+        }
+
+        const jsonResponse = new ResourceCollection(resource).getBody()
+
+        expect(jsonResponse.links).toEqual({
+            first: 'http://localhost:3000/users?page=1',
+            last: 'http://localhost:3000/users?page=5',
+            prev: 'http://localhost:3000/users?page=1',
+            next: 'http://localhost:3000/users?page=3',
+        })
+    })
+
+    it('should generate path-relative URLs when no baseUrl is configured', () => {
+        setGlobalBaseUrl('')
+
+        const resource = {
+            data: [{ id: 1 }],
+            pagination: {
+                currentPage: 2,
+                lastPage: 5,
+                nextPage: 3,
+                prevPage: 1,
+                firstPage: 1,
+                path: '/users',
+            },
+        }
+
+        const jsonResponse = new ResourceCollection(resource).getBody()
+
+        expect(jsonResponse.links).toEqual({
+            first: '/users?page=1',
+            last: '/users?page=5',
+            prev: '/users?page=1',
+            next: '/users?page=3',
+        })
+    })
+
+    it('should fall back to bare /?page=X when neither baseUrl nor path is available', () => {
+        setGlobalBaseUrl('')
+
+        const resource = {
+            data: [{ id: 1 }],
+            pagination: {
+                currentPage: 2,
+                lastPage: 5,
+                nextPage: 3,
+                prevPage: 1,
+                firstPage: 1,
+            },
+        }
+
+        const jsonResponse = new ResourceCollection(resource).getBody()
+
+        expect(jsonResponse.links).toEqual({
+            first: '/?page=1',
+            last: '/?page=5',
+            prev: '/?page=1',
+            next: '/?page=3',
+        })
+    })
+
+    it('should use path directly when it is already a full URL', () => {
+        setGlobalBaseUrl('')
+
+        const resource = {
+            data: [{ id: 1 }],
+            pagination: {
+                currentPage: 1,
+                lastPage: 3,
+                nextPage: 2,
+                firstPage: 1,
+                path: 'http://api.example.com/v2/users',
+            },
+        }
+
+        const jsonResponse = new ResourceCollection(resource).getBody()
+
+        expect(jsonResponse.links).toEqual({
+            first: 'http://api.example.com/v2/users?page=1',
+            last: 'http://api.example.com/v2/users?page=3',
+            next: 'http://api.example.com/v2/users?page=2',
+        })
+    })
+
+    it('should generate full URLs in GenericResource when baseUrl is configured', () => {
+        setGlobalBaseUrl('https://myapp.test')
+
+        const resource = {
+            data: [{ id: 1 }],
+            pagination: {
+                currentPage: 3,
+                lastPage: 10,
+                nextPage: 4,
+                prevPage: 2,
+                firstPage: 1,
+                path: '/articles',
+            },
+        }
+
+        const jsonResponse = new GenericResource(resource).getBody()
+
+        expect(jsonResponse.links).toEqual({
+            first: 'https://myapp.test/articles?page=1',
+            last: 'https://myapp.test/articles?page=10',
+            prev: 'https://myapp.test/articles?page=2',
+            next: 'https://myapp.test/articles?page=4',
+        })
+    })
+
+    it('should generate full URLs with baseUrl and no path', () => {
+        setGlobalBaseUrl('https://api.example.com')
+
+        const resource = {
+            data: [{ id: 1 }],
+            pagination: {
+                currentPage: 1,
+                lastPage: 3,
+                nextPage: 2,
+                firstPage: 1,
+            },
+        }
+
+        const jsonResponse = new ResourceCollection(resource).getBody()
+
+        expect(jsonResponse.links).toEqual({
+            first: 'https://api.example.com/?page=1',
+            last: 'https://api.example.com/?page=3',
+            next: 'https://api.example.com/?page=2',
+        })
+    })
+
+    it('should prefer absolute path URL over baseUrl', () => {
+        setGlobalBaseUrl('https://ignored.com')
+
+        const resource = {
+            data: [{ id: 1 }],
+            pagination: {
+                currentPage: 1,
+                lastPage: 2,
+                nextPage: 2,
+                firstPage: 1,
+                path: 'https://actual.com/users',
+            },
+        }
+
+        const jsonResponse = new ResourceCollection(resource).getBody()
+
+        expect(jsonResponse.links).toEqual({
+            first: 'https://actual.com/users?page=1',
+            last: 'https://actual.com/users?page=2',
+            next: 'https://actual.com/users?page=2',
+        })
+    })
+
+    it('should auto-detect path from Express {req, res} context', () => {
+        const expressCtx = {
+            req: { originalUrl: '/api/users' },
+            res: { send: () => { } },
+        }
+
+        const resource = {
+            data: [{ id: 1 }],
+            pagination: {
+                currentPage: 1,
+                lastPage: 3,
+                nextPage: 2,
+                firstPage: 1,
+            },
+        }
+
+        // Bare res without req — no URL to detect, falls back
+        const jsonResponse = new ResourceCollection(resource, expressCtx.res as any).getBody()
+        expect(jsonResponse.links?.first).toBe('/?page=1')
+
+        // With {req, res} context, auto-detects URL from req.originalUrl
+        setRequestUrl(undefined)
+        const jsonResponse2 = new ResourceCollection(resource, expressCtx as any).getBody()
+        expect(jsonResponse2.links).toEqual({
+            first: '/api/users?page=1',
+            last: '/api/users?page=3',
+            next: '/api/users?page=2',
+        })
+    })
+
+    it('should auto-detect path from H3 {req, res} context', () => {
+        // H3 HTTPEvent: req is a Web standard Request with a full URL
+        const h3Ctx = {
+            req: { url: 'http://localhost:3000/articles' },
+            res: {},
+        }
+
+        const resource = {
+            data: [{ id: 1 }],
+            pagination: {
+                currentPage: 2,
+                lastPage: 5,
+                nextPage: 3,
+                prevPage: 1,
+                firstPage: 1,
+            },
+        }
+
+        const jsonResponse = new ResourceCollection(resource, h3Ctx as any).getBody()
+        expect(jsonResponse.links).toEqual({
+            first: '/articles?page=1',
+            last: '/articles?page=5',
+            prev: '/articles?page=1',
+            next: '/articles?page=3',
+        })
+    })
+
+    it('should use setCtx to set request URL from middleware', () => {
+        // setCtx accepts any {req}-shaped object
+        ResourceCollection.setCtx({ req: { originalUrl: '/products' } })
+
+        const resource = {
+            data: [{ id: 1 }],
+            pagination: {
+                currentPage: 1,
+                lastPage: 2,
+                nextPage: 2,
+                firstPage: 1,
+            },
+        }
+
+        const jsonResponse = new ResourceCollection(resource).getBody()
+        expect(jsonResponse.links).toEqual({
+            first: '/products?page=1',
+            last: '/products?page=2',
+            next: '/products?page=2',
+        })
+    })
+
+    it('should prefer explicit pagination path over auto-detected URL', () => {
+        ResourceCollection.setCtx({ req: { originalUrl: '/ignored' } })
+
+        const resource = {
+            data: [{ id: 1 }],
+            pagination: {
+                currentPage: 1,
+                lastPage: 2,
+                nextPage: 2,
+                firstPage: 1,
+                path: '/explicit-path',
+            },
+        }
+
+        const jsonResponse = new ResourceCollection(resource).getBody()
+        expect(jsonResponse.links).toEqual({
+            first: '/explicit-path?page=1',
+            last: '/explicit-path?page=2',
+            next: '/explicit-path?page=2',
+        })
+    })
+
+    it('should maintain backward compatibility with bare response parameter', () => {
+        const expressRes = { send: () => { } }
+
+        const resource = {
+            data: [{ id: 1 }],
+            pagination: {
+                currentPage: 1,
+                lastPage: 2,
+                nextPage: 2,
+                firstPage: 1,
+                path: '/users',
+            },
+        }
+
+        const jsonResponse = new ResourceCollection(resource, expressRes as any).getBody()
+        expect(jsonResponse.links).toEqual({
+            first: '/users?page=1',
+            last: '/users?page=2',
+            next: '/users?page=2',
+        })
+    })
+
+    it('should preserve existing query string from auto-detected Express URL', () => {
+        const expressCtx = {
+            req: { originalUrl: '/api/users?search=foo&sort=name' },
+            res: { send: () => { } },
+        }
+
+        const resource = {
+            data: [{ id: 1 }],
+            pagination: {
+                currentPage: 1,
+                lastPage: 3,
+                nextPage: 2,
+                firstPage: 1,
+            },
+        }
+
+        const jsonResponse = new ResourceCollection(resource, expressCtx as any).getBody()
+        expect(jsonResponse.links).toEqual({
+            first: '/api/users?search=foo&sort=name&page=1',
+            last: '/api/users?search=foo&sort=name&page=3',
+            next: '/api/users?search=foo&sort=name&page=2',
+        })
+    })
+
+    it('should preserve query string from H3 event with Web Request URL', () => {
+        const h3Ctx = {
+            req: { url: 'http://localhost:3000/posts?tag=js' },
+            res: {},
+        }
+
+        const resource = {
+            data: [{ id: 1 }],
+            pagination: {
+                currentPage: 2,
+                lastPage: 4,
+                nextPage: 3,
+                prevPage: 1,
+                firstPage: 1,
+            },
+        }
+
+        const jsonResponse = new ResourceCollection(resource, h3Ctx as any).getBody()
+        expect(jsonResponse.links).toEqual({
+            first: '/posts?tag=js&page=1',
+            last: '/posts?tag=js&page=4',
+            prev: '/posts?tag=js&page=1',
+            next: '/posts?tag=js&page=3',
+        })
+    })
+
+    it('should preserve query string with baseUrl configured', () => {
+        setGlobalBaseUrl('https://api.example.com')
+        setRequestUrl('/users?role=admin')
+
+        const resource = {
+            data: [{ id: 1 }],
+            pagination: {
+                currentPage: 1,
+                lastPage: 2,
+                nextPage: 2,
+                firstPage: 1,
+            },
+        }
+
+        const jsonResponse = new ResourceCollection(resource).getBody()
+        expect(jsonResponse.links).toEqual({
+            first: 'https://api.example.com/users?role=admin&page=1',
+            last: 'https://api.example.com/users?role=admin&page=2',
+            next: 'https://api.example.com/users?role=admin&page=2',
+        })
+    })
+
+    it('should preserve query string when path is a full URL', () => {
+        const resource = {
+            data: [{ id: 1 }],
+            pagination: {
+                currentPage: 1,
+                lastPage: 2,
+                nextPage: 2,
+                firstPage: 1,
+                path: 'http://api.example.com/v2/users?status=active',
+            },
+        }
+
+        const jsonResponse = new ResourceCollection(resource).getBody()
+        expect(jsonResponse.links).toEqual({
+            first: 'http://api.example.com/v2/users?status=active&page=1',
+            last: 'http://api.example.com/v2/users?status=active&page=2',
+            next: 'http://api.example.com/v2/users?status=active&page=2',
         })
     })
 })

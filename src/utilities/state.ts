@@ -9,7 +9,7 @@ let globalPaginatedLinks: Config['paginatedLinks'] = {
     prev: 'prev',
     next: 'next',
 }
-let globalBaseUrl: Config['baseUrl'] = 'https://localhost'
+let globalBaseUrl: Config['baseUrl'] = ''
 let globalPageName: Config['pageName'] = 'page'
 let globalPaginatedMeta: Config['paginatedMeta'] = {
     to: 'to',
@@ -256,4 +256,120 @@ export const setGlobalCursorMeta = (meta: Config['cursorMeta']): void => {
  */
 export const getGlobalCursorMeta = (): Config['cursorMeta'] => {
     return globalCursorMeta
+}
+
+let globalRequestUrl: string | undefined
+
+/**
+ * Sets the current request URL, used as a fallback for pagination link generation
+ * when no explicit path is provided in the pagination data.
+ * 
+ * @param url The request URL or pathname to set.
+ */
+export const setRequestUrl = (url: string | undefined): void => {
+    globalRequestUrl = url
+}
+
+/**
+ * Retrieves the current request URL, used as a fallback path for pagination links.
+ * 
+ * @returns The current request URL, or undefined if not set.
+ */
+export const getRequestUrl = (): string | undefined => {
+    return globalRequestUrl
+}
+
+/**
+ * Extracts the request URL pathname (with query string) from an HTTP context.
+ *
+ * Both Express middleware and H3 HTTPEvent expose `{ req, res }`. The `req`
+ * object carries URL information:
+ * - H3 / Web standard `Request`: `req.url` is a full URL string
+ * - Express `Request`: `req.originalUrl` is the pathname + query string
+ *
+ * The function also accepts a plain `req` object directly or a string URL.
+ *
+ * @param ctx An HTTP context `{ req, res }`, a bare `Request` object, or a string URL.
+ * @returns The pathname with query string, or undefined.
+ */
+export const extractRequestUrl = (ctx: unknown): string | undefined => {
+    if (!ctx || typeof ctx !== 'object') {
+        return typeof ctx === 'string' ? ctx : undefined
+    }
+
+    const obj = ctx as Record<string, any>
+
+    // Context with `req` property ({ req, res } from Express middleware or H3 HTTPEvent)
+    if (obj.req && typeof obj.req === 'object') {
+        return extractUrlFromRequest(obj.req)
+    }
+
+    // Bare request object passed directly
+    return extractUrlFromRequest(obj)
+}
+
+/**
+ * Extracts the URL pathname + query string from a request object.
+ *
+ * Handles both Web standard `Request` (H3) where `url` is a full URL string,
+ * and Express `Request` where `originalUrl` or `url` provide the path.
+ */
+const extractUrlFromRequest = (req: Record<string, any>): string | undefined => {
+    // Express Request: `originalUrl` is the most reliable path + query
+    if (typeof req.originalUrl === 'string') {
+        return req.originalUrl
+    }
+
+    // Web standard Request (H3): `url` is a full URL string — extract pathname + search
+    if (typeof req.url === 'string') {
+        try {
+            const parsed = new URL(req.url)
+
+            return parsed.pathname + parsed.search
+        } catch {
+            // Not a valid absolute URL, use as-is (likely already a path)
+            return req.url
+        }
+    }
+
+    return undefined
+}
+
+/**
+ * Extracts the response object from an HTTP context.
+ *
+ * If the context has a `res` property (Express middleware `{ req, res }` or
+ * H3 HTTPEvent), returns `ctx.res`. Otherwise assumes the value is already
+ * a bare response object and returns it directly.
+ *
+ * @param ctx The HTTP context or bare response.
+ * @returns The response object, or undefined.
+ */
+export const extractResponseFromCtx = (ctx: unknown): any | undefined => {
+    if (!ctx || typeof ctx !== 'object') {
+        return undefined
+    }
+
+    const obj = ctx as Record<string, any>
+
+    // Context with `res` property ({ req, res } from Express or H3)
+    if (obj.res && typeof obj.res === 'object') {
+        return obj.res
+    }
+
+    // Bare response object passed directly
+    return ctx
+}
+
+/**
+ * Sets the current request context. Extracts the request URL from the provided
+ * context and stores it for use in pagination link generation.
+ * 
+ * Can be called from middleware to make the request URL available to all
+ * resources created during the request lifecycle.
+ * 
+ * @param ctx An HTTP context `{ req, res }`, Express Request, H3 HTTPEvent, or bare request.
+ */
+export const setCtx = (ctx: unknown): void => {
+    setRequestUrl(extractRequestUrl(ctx))
 }

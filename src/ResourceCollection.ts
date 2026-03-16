@@ -16,11 +16,14 @@ import {
   appendRootProperties,
   buildPaginationExtras,
   buildResponseEnvelope,
+  extractRequestUrl,
+  extractResponseFromCtx,
   getCaseTransformer,
   getPaginationExtraKeys,
   isArkormLikeCollection,
   normalizeSerializableData,
   sanitizeConditionalAttributes,
+  setRequestUrl,
   transformKeys,
 } from './utilities'
 
@@ -38,6 +41,7 @@ export class ResourceCollection<
 > extends BaseSerializer<R> {
   [key: string]: any;
   private body: CollectionBody<R> = { data: [] as any }
+  private res?: Response
   public resource: R
   public collects?: typeof Resource<T>
   protected withResponseContext?: {
@@ -74,10 +78,19 @@ export class ResourceCollection<
   }
 
   constructor(rsc: R)
-  constructor(rsc: R, res: Response)
-  constructor(rsc: R, private res?: Response) {
+  constructor(rsc: R, ctx: Response | H3Event | Record<string, any>)
+  constructor(rsc: R, ctx?: Response | H3Event | Record<string, any>) {
     super()
     this.resource = rsc
+
+    if (ctx) {
+      const url = extractRequestUrl(ctx)
+      if (url) {
+        setRequestUrl(url)
+      }
+
+      this.res = extractResponseFromCtx(ctx)
+    }
   }
 
   /**

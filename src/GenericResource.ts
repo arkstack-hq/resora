@@ -17,12 +17,15 @@ import {
   appendRootProperties,
   buildPaginationExtras,
   buildResponseEnvelope,
+  extractRequestUrl,
+  extractResponseFromCtx,
   getCaseTransformer,
   getPaginationExtraKeys,
   isArkormLikeCollection,
   isArkormLikeModel,
   normalizeSerializableData,
   sanitizeConditionalAttributes,
+  setRequestUrl,
   transformKeys,
 } from './utilities'
 
@@ -39,6 +42,7 @@ export class GenericResource<
 > extends BaseSerializer<R> {
   [key: string]: any;
   private body: GenericBody<R> = { data: {} as any }
+  private res?: Response
   public resource: R
   public collects?: typeof Resource<T>
   protected withResponseContext?: {
@@ -46,9 +50,18 @@ export class GenericResource<
     raw: Response | H3Event['res']
   }
 
-  constructor(rsc: R, private res?: Response) {
+  constructor(rsc: R, ctx?: Response | H3Event | Record<string, any>) {
     super()
     this.resource = rsc
+
+    if (ctx) {
+      const url = extractRequestUrl(ctx)
+      if (url) {
+        setRequestUrl(url)
+      }
+
+      this.res = extractResponseFromCtx(ctx)
+    }
 
     const hasDataPayload = !!this.resource
       && typeof this.resource === 'object'

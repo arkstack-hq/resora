@@ -15,10 +15,13 @@ import { BaseSerializer } from './BaseSerializer'
 import {
   appendRootProperties,
   buildResponseEnvelope,
+  extractRequestUrl,
+  extractResponseFromCtx,
   getCaseTransformer,
   isArkormLikeModel,
   normalizeSerializableData,
   sanitizeConditionalAttributes,
+  setRequestUrl,
   transformKeys,
 } from './utilities'
 
@@ -33,15 +36,25 @@ import {
 export class Resource<R extends ResourceData | NonCollectible = ResourceData> extends BaseSerializer<R> {
   [key: string]: any;
   private body: ResourceBody<R> = { data: {} as any }
+  private res?: Response
   public resource: R
   protected withResponseContext?: {
     response: ServerResponse<ResourceBody<R>>
     raw: Response | H3Event['res']
   }
 
-  constructor(rsc: R, private res?: Response) {
+  constructor(rsc: R, ctx?: Response | H3Event | Record<string, any>) {
     super()
     this.resource = rsc
+
+    if (ctx) {
+      const url = extractRequestUrl(ctx)
+      if (url) {
+        setRequestUrl(url)
+      }
+
+      this.res = extractResponseFromCtx(ctx)
+    }
 
     const source = this.resource.data ?? this.resource
 
