@@ -148,13 +148,41 @@ Example output:
 }
 ```
 
+## 6. Use request page params as Arkorm defaults
+
+When Arkorm pagination runs before you build the response, wire Resora's request
+URL parsing into Arkorm's runtime resolver.
+
+```ts
+import { Resource, createArkormCurrentPageResolver } from 'resora';
+import { configureArkormRuntime } from 'arkormx';
+
+app.use((req, _res, next) => {
+  Resource.setCtx({ req });
+  next();
+});
+
+configureArkormRuntime(() => prisma, {
+  pagination: {
+    resolveCurrentPage: createArkormCurrentPageResolver(),
+  },
+});
+
+const users = await User.query().paginate(15, undefined, {
+  pageName: 'p',
+});
+```
+
+With a request like `/users?p=3`, Arkorm will default to page `3` and Resora
+will generate links using the same `pageName`.
+
 ## Notes
 
 - Pagination links are generated from numeric page values (`firstPage`, `lastPage`, `prevPage`, `nextPage`) and `pagination.path`.
 - If `paginatedExtras.cursor` is not configured, cursor values are emitted under `meta.cursor` by default.
 - Set `baseUrl` to your public API origin for absolute URLs in production, or use [URL auto-detection](#url-detection) to derive paths from the request context.
 
-## 6. Automatic URL detection from request context {#url-detection}
+## 7. Automatic URL detection from request context {#url-detection}
 
 When your pagination data does **not** include an explicit `path`, Resora can automatically detect the current request URL from the HTTP context and use it for link generation — including any existing query string parameters.
 

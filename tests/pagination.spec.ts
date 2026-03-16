@@ -2,6 +2,8 @@ import {
     GenericResource,
     Resource,
     ResourceCollection,
+    createArkormCurrentPageResolver,
+    resolveCurrentPage,
     setGlobalBaseUrl,
     setGlobalCursorMeta,
     setGlobalPageName,
@@ -140,6 +142,22 @@ describe('Resource Pagination', () => {
                 path: '/users',
             },
         })
+    })
+
+    it('resolves the current page from the stored request URL using the configured pageName', () => {
+        setGlobalPageName('p')
+        Resource.setCtx({ req: { originalUrl: '/users?filter=active&p=3' } })
+
+        expect(resolveCurrentPage()).toBe(3)
+    })
+
+    it('creates an Arkorm-compatible current-page resolver from request context', () => {
+        const resolvePage = createArkormCurrentPageResolver({
+            req: { originalUrl: '/users?cursor=4&sort=name' },
+        })
+
+        expect(resolvePage('cursor')).toBe(4)
+        expect(resolvePage('page')).toBeUndefined()
     })
 
     it('should support cursor as a configured paginated extra with cursorMeta mapping', () => {

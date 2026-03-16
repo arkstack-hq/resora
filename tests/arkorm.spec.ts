@@ -80,7 +80,7 @@ describe('Arkorm integration', () => {
     })
 
     it('serializes eager-loaded Arkorm-like relationships in extended collections', async () => {
-        const models = await UserModel.query().paginate(2)
+        const models = await UserModel.query().paginate(1, 2)
 
         const collection = new UserCollection(models)
 

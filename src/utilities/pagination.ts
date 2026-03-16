@@ -1,4 +1,5 @@
 import {
+    extractRequestUrl,
     getGlobalBaseUrl,
     getGlobalCursorMeta,
     getGlobalPageName,
@@ -36,6 +37,71 @@ export const getPaginationExtraKeys = (): {
         linksKey: extras.links,
         cursorKey: extras.cursor,
     }
+}
+
+const parsePageValue = (value: string | null): number | undefined => {
+    if (value === null) {
+        return undefined
+    }
+
+    const page = Number(value)
+
+    if (!Number.isInteger(page) || page < 1) {
+        return undefined
+    }
+
+    return page
+}
+
+const getPageValueFromUrl = (
+    requestUrl: string,
+    pageName: string,
+): string | null => {
+    try {
+        return new URL(requestUrl, 'http://resora.local').searchParams.get(pageName)
+    } catch {
+        const qIndex = requestUrl.indexOf('?')
+
+        if (qIndex < 0) {
+            return null
+        }
+
+        return new URLSearchParams(requestUrl.slice(qIndex + 1)).get(pageName)
+    }
+}
+
+/**
+ * Resolves the current page number from a request context or the globally
+ * stored request URL, using the configured page query name by default.
+ *
+ * @param ctx Optional request context or URL.
+ * @param pageName Optional page query parameter name.
+ * @returns
+ */
+export const resolveCurrentPage = (
+    ctx?: unknown,
+    pageName = getGlobalPageName() || 'page',
+): number | undefined => {
+    const requestUrl = typeof ctx === 'undefined'
+        ? getRequestUrl()
+        : extractRequestUrl(ctx)
+
+    if (!requestUrl) {
+        return undefined
+    }
+
+    return parsePageValue(getPageValueFromUrl(requestUrl, pageName))
+}
+
+/**
+ * Creates an Arkorm-compatible current-page resolver backed by Resora's
+ * request-context URL parsing.
+ *
+ * @param ctx Optional request context or URL.
+ * @returns
+ */
+export const createArkormCurrentPageResolver = (ctx?: unknown) => {
+    return (pageName: string): number | undefined => resolveCurrentPage(ctx, pageName)
 }
 
 /**
