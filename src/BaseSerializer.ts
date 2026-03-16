@@ -16,6 +16,9 @@ import {
     setCtx as setCtxState,
 } from './utilities'
 
+import { H3Event } from 'h3'
+import { Response } from 'express'
+
 interface SerializerConstructor {
     preferredCase?: CaseStyle
     responseStructure?: ResponseStructureConfig
@@ -37,6 +40,7 @@ export abstract class BaseSerializer<TResource = any> {
     static responseStructure?: ResponseStructureConfig
     static config?: () => ResourceLevelConfig
 
+    protected static ctx?: Response | H3Event | Record<string, any>
     protected instanceConfig?: ResourceLevelConfig
     protected additionalMeta?: MetaData
     protected called: {
@@ -67,6 +71,7 @@ export abstract class BaseSerializer<TResource = any> {
      */
     static setCtx (ctx: unknown): void {
         setCtxState(ctx)
+        this.ctx = ctx as any
     }
 
     /**

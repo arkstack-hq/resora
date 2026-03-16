@@ -22,6 +22,21 @@ describe('Connect-style Requests (Express)', () => {
         expect(response.body).toEqual({ data: resource })
     })
 
+    it('should can use the global context object', async () => {
+        const resource = { id: 1, name: 'Test Resource' }
+        app.get('/test', async (req, res) => {
+            Resource.setCtx({ res, req })
+
+            return await new Resource(resource)
+                .response()
+                .setStatusCode(202)
+        })
+
+        const response = await supertest(app).get('/test')
+        expect(response.body).toEqual({ data: resource })
+        expect(response.status).toEqual(202)
+    })
+
     it('should allow chaining of methods', async () => {
         const resource = { id: 1, name: 'Test Resource' }
         app.get('/test', async (req, res) => {
