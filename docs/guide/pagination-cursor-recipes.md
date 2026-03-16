@@ -9,12 +9,12 @@ import { defineConfig } from 'resora';
 
 export default defineConfig({
   paginatedExtras: ['meta', 'links'],
-  baseUrl: 'https://localhost',
+  baseUrl: '',
   pageName: 'page',
 });
 ```
 
-When `pagination.path` is available on a collection resource, links are generated as absolute URLs.
+When `pagination.path` is available on a collection resource, links are generated as path-relative URLs. If a `baseUrl` is configured or the request URL is [auto-detected from context](#url-detection), links become absolute.
 
 Example:
 
@@ -27,8 +27,8 @@ Example:
     "path": "/users"
   },
   "links": {
-    "prev": "https://localhost/users?page=1",
-    "next": "https://localhost/users?page=3"
+    "prev": "/users?page=1",
+    "next": "/users?page=3"
   }
 }
 ```
@@ -142,8 +142,8 @@ Example output:
     "endpoint": "/users"
   },
   "links": {
-    "previous": "https://localhost/users?page=1",
-    "next": "https://localhost/users?page=3"
+    "previous": "/users?page=1",
+    "next": "/users?page=3"
   }
 }
 ```
@@ -152,4 +152,117 @@ Example output:
 
 - Pagination links are generated from numeric page values (`firstPage`, `lastPage`, `prevPage`, `nextPage`) and `pagination.path`.
 - If `paginatedExtras.cursor` is not configured, cursor values are emitted under `meta.cursor` by default.
-- `baseUrl` should be set to your public API origin for production responses.
+- Set `baseUrl` to your public API origin for absolute URLs in production, or use [URL auto-detection](#url-detection) to derive paths from the request context.
+
+## 6. Automatic URL detection from request context {#url-detection}
+
+When your pagination data does **not** include an explicit `path`, Resora can automatically detect the current request URL from the HTTP context and use it for link generation — including any existing query string parameters.
+
+This works with both **Express** and **H3** because both expose a `{ req, res }` context shape.
+
+### Passing context to the constructor
+
+Pass the full `{ req, res }` context (or the framework event) as the second argument:
+
+::: code-group
+
+```ts [Express]
+app.get('/api/users', async (req, res) => {
+  const users = await getUsers(req.query);
+
+  // Pass { req, res } — Resora reads req.originalUrl for the path
+  return await new ResourceCollection(users, { req, res });
+});
+```
+
+```ts [H3]
+export default defineEventHandler((event) => {
+  const users = await getUsers(getQuery(event));
+
+  // Pass the H3 event — Resora reads event.req.url
+  return new ResourceCollection(users, event);
+});
+```
+
+:::
+
+If the user navigates to `/api/users?search=foo&sort=name`, the generated links will preserve the query string:
+
+```json
+{
+  "links": {
+    "first": "/api/users?search=foo&sort=name&page=1",
+    "next": "/api/users?search=foo&sort=name&page=2"
+  }
+}
+```
+
+With `baseUrl` configured, the links become full URLs:
+
+```json
+{
+  "links": {
+    "first": "https://api.example.com/api/users?search=foo&sort=name&page=1",
+    "next": "https://api.example.com/api/users?search=foo&sort=name&page=2"
+  }
+}
+```
+
+::: tip Priority
+An explicit `pagination.path` always takes precedence over the auto-detected URL. If both are present, the explicit path wins.
+:::
+
+### Using `setCtx()` in middleware
+
+If you prefer to set the request context once in a middleware (instead of passing it to each resource), use the static `setCtx()` method available on all serializer classes:
+
+::: code-group
+
+```ts [Express]
+import { Resource } from 'resora';
+
+// Register middleware before your routes
+app.use((req, res, next) => {
+  Resource.setCtx({ req, res });
+  next();
+});
+
+// In your route handler — no need to pass context
+app.get('/api/users', async (req, res) => {
+  const users = await getUsers(req.query);
+  return await new ResourceCollection(users, res);
+});
+```
+
+```ts [H3]
+import { Resource } from 'resora';
+
+app.use((event) => {
+  Resource.setCtx(event);
+});
+
+export default defineEventHandler((event) => {
+  return new ResourceCollection(users);
+});
+```
+
+:::
+
+`setCtx()` is inherited by `Resource`, `ResourceCollection`, and `GenericResource` — calling it on any one of them makes the request URL available for all of them.
+
+::: warning Request scoping
+`setCtx()` stores the URL globally. If your application handles concurrent requests in a shared process, call `setCtx()` at the start of each request to ensure accuracy. For single-request-per-process runtimes (serverless, edge workers), this is automatic.
+:::
+
+### How URL extraction works
+
+Resora inspects the context using the common `{ req, res }` interface:
+
+| Framework | Request URL source                 | Example value                         |
+| --------- | ---------------------------------- | ------------------------------------- |
+| Express   | `req.originalUrl`                  | `/api/users?search=foo`               |
+| H3        | `req.url` (Web standard `Request`) | `http://localhost:3000/api/users?q=1` |
+
+For H3's Web standard `Request`, the full URL is parsed and only the pathname + search is used for link generation.
+
+If a bare response object is passed (without `req`), URL detection is skipped and the resource falls back to `pagination.path` or the bare `/?page=X` format.

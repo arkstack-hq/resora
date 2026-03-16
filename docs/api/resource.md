@@ -5,15 +5,15 @@ Handles transformation of a single resource.
 ## Constructor
 
 ```ts
-new Resource(resource, response?)
+new Resource(resource, context?)
 ```
 
 ### Parameters
 
-| Parameter | Type                        | Description       |
-| --------- | --------------------------- | ----------------- |
-| resource  | ResourceData                | Data to transform |
-| response  | Express Response (optional) | Auto-send support |
+| Parameter | Type                                  | Description                                  |
+| --------- | ------------------------------------- | -------------------------------------------- |
+| resource  | ResourceData                          | Data to transform                            |
+| context   | `{ req, res }` \| Response (optional) | HTTP context for auto-send and URL detection |
 
 ---
 

@@ -41,7 +41,7 @@ app.get('/:id', async () => {
 });
 ```
 
-For Express and other framewords implementing Connect-style middleware, you will have to pass the response object into the contructor
+For Express and other frameworks implementing Connect-style middleware, pass the `{ req, res }` context into the constructor. This enables both auto-send and [automatic URL detection](/guide/pagination-cursor-recipes#url-detection) for pagination links.
 
 ```ts
 import { Resource } from 'resora';
@@ -49,9 +49,15 @@ import { Resource } from 'resora';
 app.get('/:id', async (req, res) => {
   const user = { id: req.params.id, name: 'John Doe' };
 
-  return await new Resource(user, res).additional({ status: 'success' });
+  return await new Resource(user, { req, res }).additional({
+    status: 'success',
+  });
 });
 ```
+
+::: tip
+Passing just `res` still works for backward compatibility, but won't enable URL detection.
+:::
 
 ### Collection
 
@@ -70,7 +76,7 @@ app.get('/', async () => {
 });
 ```
 
-You will also have to pass the response object into the contructor for Express and other framewords implementing Connect-style middleware.
+You can also pass the `{ req, res }` context into the constructor for Express and other frameworks implementing Connect-style middleware.
 
 ```ts
 import { ResourceCollection } from 'resora';
@@ -81,7 +87,7 @@ app.get('/', async (req, res) => {
     { id: 2, name: 'Jane Doe' },
   ];
 
-  return await new ResourceCollection(users, res);
+  return await new ResourceCollection(users, { req, res });
 });
 ```
 
