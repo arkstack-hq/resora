@@ -5,6 +5,7 @@
 [![License](https://img.shields.io/npm/l/resora.svg)](https://github.com/arkstack-hq/resora/blob/main/LICENSE)
 [![CI](https://github.com/arkstack-hq/resora/actions/workflows/ci.yml/badge.svg)](https://github.com/arkstack-hq/resora/actions/workflows/ci.yml)
 [![Deploy Docs](https://github.com/arkstack-hq/resora/actions/workflows/deploy-docs.yml/badge.svg)](https://github.com/arkstack-hq/resora/actions/workflows/deploy-docs.yml)
+[![codecov](https://codecov.io/gh/arkstack-hq/resora/graph/badge.svg?token=IBgFGJCoOr)](https://codecov.io/gh/arkstack-hq/resora)
 
 Resora is a structured API response layer for Node.js and TypeScript backends.
 
