@@ -105,6 +105,42 @@ const buildPageUrl = (
 }
 
 /**
+ * Derives page numbers (firstPage, lastPage, nextPage, prevPage) from an
+ * Arkorm-style pagination meta object so that buildPageUrl() can generate
+ * links that respect the auto-detected request URL and query string.
+ */
+const derivePageNumbers = (
+    meta: Record<string, any>,
+): Record<string, number | undefined> => {
+    const currentPage = meta.currentPage as number | undefined
+    const lastPage = meta.lastPage as number | undefined
+    const hasMorePages = meta.hasMorePages as boolean | undefined
+
+    return {
+        firstPage: typeof lastPage === 'number' ? 1 : undefined,
+        lastPage,
+        nextPage: typeof lastPage === 'number'
+            ? (typeof currentPage === 'number' && currentPage < lastPage ? currentPage + 1 : undefined)
+            : (hasMorePages && typeof currentPage === 'number' ? currentPage + 1 : undefined),
+        prevPage: typeof currentPage === 'number' && currentPage > 1
+            ? currentPage - 1
+            : undefined,
+    }
+}
+
+/**
+ * Extracts a pagination link (e.g. 'first', 'last', 'prev', 'next') from a 
+ * pagination object, if it exists.
+ * 
+ * @param pagination 
+ * @param rel 
+ * @returns 
+ */
+export const hasPaginationLink = (pagination: any, rel: string): string | undefined => {
+    return pagination.links && Object.prototype.hasOwnProperty.call(pagination.links, rel)
+}
+
+/**
  * Builds pagination extras (meta, links, cursor) for a given resource based on 
  * its pagination and cursor properties, using the configured keys for each type of extra.
  * 
@@ -121,7 +157,15 @@ export const buildPaginationExtras = (resource: any): Record<string, any> => {
         && typeof resource.meta === 'object'
         && (Array.isArray(resource.data) || isArkormLikeCollection(resource.data))
 
-    const arkormLinks = isArkormPaginatorLike
+    // Derive page numbers from Arkorm paginator meta so buildPageUrl() can
+    // generate links that respect the auto-detected request URL / query string.
+    const arkormPageNumbers = isArkormPaginatorLike
+        ? derivePageNumbers(resource.meta)
+        : undefined
+
+    // Arkorm paginator URLs are kept as a fallback when buildPageUrl() cannot
+    // produce a link (i.e. no request URL, no baseUrl, and no explicit path).
+    const arkormFallbackLinks = isArkormPaginatorLike
         ? {
             first: typeof resource.firstPageUrl === 'function' ? resource.firstPageUrl() : undefined,
             last: typeof resource.lastPageUrl === 'function' ? resource.lastPageUrl() : undefined,
@@ -130,20 +174,11 @@ export const buildPaginationExtras = (resource: any): Record<string, any> => {
         }
         : undefined
 
-    const sanitizedArkormLinks = arkormLinks
-        ? Object.entries(arkormLinks).reduce<Record<string, any>>((accumulator, [key, value]) => {
-            if (typeof value !== 'undefined') {
-                accumulator[key] = value
-            }
-
-            return accumulator
-        }, {})
-        : undefined
-
     const pagination = resource?.pagination || (isArkormPaginatorLike
         ? {
             ...resource.meta,
-            links: resource.links || sanitizedArkormLinks,
+            ...(arkormPageNumbers || {}),
+            path: resource.urlDriver?.path,
         }
         : undefined)
     const cursor = resource?.cursor
@@ -152,10 +187,38 @@ export const buildPaginationExtras = (resource: any): Record<string, any> => {
     const linksBlock: Record<string, any> = {}
 
     if (pagination) {
+        // For Arkorm paginators, prefer the auto-detected request URL over the
+        // paginator's own path. Plain pagination data keeps the existing
+        // behaviour where an explicit path wins over the request URL.
+        const effectivePath = isArkormPaginatorLike
+            ? (getRequestUrl() || pagination.path)
+            : pagination.path
+
+        const linksSource: Record<string, any> = {
+            first: hasPaginationLink(pagination, 'first')
+                ? pagination.links.first
+                : buildPageUrl(pagination.firstPage, effectivePath) ?? arkormFallbackLinks?.first,
+            last: hasPaginationLink(pagination, 'last')
+                ? pagination.links.last
+                : buildPageUrl(pagination.lastPage, effectivePath) ?? arkormFallbackLinks?.last,
+            prev: hasPaginationLink(pagination, 'prev')
+                ? pagination.links.prev
+                : buildPageUrl(pagination.prevPage, effectivePath) ?? arkormFallbackLinks?.prev,
+            next: hasPaginationLink(pagination, 'next')
+                ? pagination.links.next
+                : buildPageUrl(pagination.nextPage, effectivePath) ?? arkormFallbackLinks?.next,
+        }
+
+        // Resolve links for the meta block: explicit pagination.links first,
+        // then computed links from buildPageUrl() + Arkorm fallback.
+        const resolvedLinks = Object.fromEntries(
+            Object.entries(linksSource).filter(([, v]) => v !== undefined),
+        )
+
         const metaSource: Record<string, any> = {
             to: pagination.to,
             from: pagination.from,
-            links: pagination.links,
+            links: pagination.links || (isArkormPaginatorLike && Object.keys(resolvedLinks).length ? resolvedLinks : undefined),
             path: pagination.path,
             total: pagination.total,
             per_page: pagination.perPage,
@@ -170,21 +233,6 @@ export const buildPaginationExtras = (resource: any): Record<string, any> => {
             if (typeof value !== 'undefined') {
                 metaBlock[outputKey] = value
             }
-        }
-
-        const linksSource: Record<string, any> = {
-            first: pagination.links && Object.prototype.hasOwnProperty.call(pagination.links, 'first')
-                ? pagination.links.first
-                : buildPageUrl(pagination.firstPage, pagination.path),
-            last: pagination.links && Object.prototype.hasOwnProperty.call(pagination.links, 'last')
-                ? pagination.links.last
-                : buildPageUrl(pagination.lastPage, pagination.path),
-            prev: pagination.links && Object.prototype.hasOwnProperty.call(pagination.links, 'prev')
-                ? pagination.links.prev
-                : buildPageUrl(pagination.prevPage, pagination.path),
-            next: pagination.links && Object.prototype.hasOwnProperty.call(pagination.links, 'next')
-                ? pagination.links.next
-                : buildPageUrl(pagination.nextPage, pagination.path),
         }
 
         for (const [sourceKey, outputKey] of Object.entries(getGlobalPaginatedLinks() as Config['paginatedLinks'])) {
