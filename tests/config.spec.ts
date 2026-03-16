@@ -103,6 +103,47 @@ describe('Configuration', () => {
         })
     })
 
+    it('only includes explicitly configured paginatedMeta keys', () => {
+        const normalized = defineConfig({
+            paginatedMeta: {
+                current_page: 'currentPage',
+                last_page: 'lastPage',
+                per_page: 'perPage',
+                total: 'total',
+                path: 'endpoint',
+            },
+        })
+
+        applyRuntimeConfig(normalized)
+
+        const body = new ResourceCollection({
+            data: [{ id: 1, name: 'A' }],
+            pagination: {
+                currentPage: 2,
+                lastPage: 9,
+                perPage: 10,
+                total: 90,
+                path: '/users',
+                from: 11,
+                to: 20,
+            },
+        }).getBody()
+
+        expect(body).toEqual({
+            data: [{ id: 1, name: 'A' }],
+            meta: {
+                currentPage: 2,
+                lastPage: 9,
+                perPage: 10,
+                total: 90,
+                endpoint: '/users',
+            },
+            links: {
+                last: 'https://localhost/users?page=9',
+            },
+        })
+    })
+
     it('supports resource subclass config() for per-resource behavior', () => {
         setGlobalCase('kebab')
         setGlobalResponseStructure({ rootKey: 'payload' })
@@ -297,6 +338,59 @@ describe('Configuration', () => {
             const body = new Resource({ firstName: 'John' }).getBody()
 
             expect(body).toEqual({
+                payload: { first_name: 'John' },
+            })
+        } finally {
+            await unlink(configPath)
+
+            if (hadExisting) {
+                if (existsSync(backupPath)) {
+                    await rename(backupPath, configPath)
+                } else {
+                    await writeFile(configPath, originalContent)
+                }
+            }
+        }
+    })
+
+    it('auto-loads runtime config for direct serializer usage', async () => {
+        const configPath = path.resolve(process.cwd(), 'resora.config.cjs')
+        const backupPath = path.resolve(process.cwd(), 'resora.config.cjs.bkp')
+
+        const hadExisting = existsSync(configPath)
+        let originalContent = ''
+
+        if (hadExisting) {
+            originalContent = await readFile(configPath, 'utf-8')
+            await rename(configPath, backupPath)
+        }
+
+        try {
+            const configContent = `
+                module.exports = {
+                    preferredCase: 'snake',
+                    responseStructure: {
+                        rootKey: 'payload',
+                    },
+                }
+            `
+
+            await writeFile(configPath, configContent)
+
+            resetGlobalConfigState()
+            resetRuntimeConfigForTests()
+
+            const resourceBody = new Resource({ firstName: 'John' }).getBody()
+            const collectionBody = new ResourceCollection([{ firstName: 'John' }]).getBody()
+            const genericBody = new GenericResource({ firstName: 'John' }).getBody()
+
+            expect(resourceBody).toEqual({
+                payload: { first_name: 'John' },
+            })
+            expect(collectionBody).toEqual({
+                payload: [{ first_name: 'John' }],
+            })
+            expect(genericBody).toEqual({
                 payload: { first_name: 'John' },
             })
         } finally {

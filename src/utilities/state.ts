@@ -222,10 +222,7 @@ export const getGlobalPageName = (): Config['pageName'] => {
  * @param meta Whether to include pagination metadata in the response.
  */
 export const setGlobalPaginatedMeta = (meta: Config['paginatedMeta']): void => {
-    globalPaginatedMeta = {
-        ...globalPaginatedMeta,
-        ...meta,
-    }
+    globalPaginatedMeta = meta
 }
 
 /**

@@ -72,7 +72,7 @@ export const defineConfig = (config: ResoraConfig): Config => {
             cursorMeta: Object.assign(defConf.cursorMeta, config.cursorMeta || {}),
         },
         {
-            paginatedMeta: Object.assign(defConf.paginatedMeta, config.paginatedMeta || {}),
+            paginatedMeta: config.paginatedMeta || defConf.paginatedMeta,
         },
         {
             paginatedLinks: Object.assign(defConf.paginatedLinks, config.paginatedLinks || {}),

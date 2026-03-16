@@ -7,6 +7,7 @@ import {
 import {
     getGlobalCase,
     getGlobalResponseStructure,
+    loadRuntimeConfig,
     mergeMetadata,
     resolveMergeWhen,
     resolveWhen,
@@ -49,6 +50,10 @@ export abstract class BaseSerializer<TResource = any> {
         then?: boolean
         toResponse?: boolean
     } = {}
+
+    constructor() {
+        void loadRuntimeConfig()
+    }
 
     /**
      * Helper method to conditionally resolve a value based on a condition. 
