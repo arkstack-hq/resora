@@ -141,6 +141,9 @@ export class ServerResponse<
             this.response.status(this._status)
         }
 
+        if (typeof this.response.status !== 'function' && this._status !== 200)
+            this.response.status = this._status
+
         return resolved
     }
 
