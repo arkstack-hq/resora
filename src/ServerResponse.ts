@@ -33,9 +33,7 @@ export class ServerResponse<
     setStatusCode (status: number) {
         this._status = status
 
-        if ('status' in this.response && typeof this.response.status === 'function') {
-            this.response.status(status)
-        } else if ('status' in this.response) {
+        if ('status' in this.response && typeof this.response.status !== 'function') {
             this.response.status = status
         }
 
@@ -140,6 +138,7 @@ export class ServerResponse<
 
         if ('send' in this.response) {
             this.response.send(this.body)
+            this.response.status(this._status)
         }
 
         return resolved
