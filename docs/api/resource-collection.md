@@ -13,8 +13,15 @@ Supports:
 ## Constructor
 
 ```ts
-new ResourceCollection(resource, response?)
+new ResourceCollection(resource, context?)
 ```
+
+### Parameters
+
+| Parameter | Type                                  | Description                                  |
+| --------- | ------------------------------------- | -------------------------------------------- |
+| resource  | ResourceData[] \| Collectible         | Data to transform                            |
+| context   | `{ req, res }` \| Response (optional) | HTTP context for auto-send and URL detection |
 
 ## Mapping Items
 

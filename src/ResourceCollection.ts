@@ -16,11 +16,14 @@ import {
   appendRootProperties,
   buildPaginationExtras,
   buildResponseEnvelope,
+  extractRequestUrl,
+  extractResponseFromCtx,
   getCaseTransformer,
   getPaginationExtraKeys,
   isArkormLikeCollection,
   normalizeSerializableData,
   sanitizeConditionalAttributes,
+  setRequestUrl,
   transformKeys,
 } from './utilities'
 
@@ -38,6 +41,7 @@ export class ResourceCollection<
 > extends BaseSerializer<R> {
   [key: string]: any;
   private body: CollectionBody<R> = { data: [] as any }
+  private res?: Response
   public resource: R
   public collects?: typeof Resource<T>
   protected withResponseContext?: {
@@ -74,10 +78,20 @@ export class ResourceCollection<
   }
 
   constructor(rsc: R)
-  constructor(rsc: R, res: Response)
-  constructor(rsc: R, private res?: Response) {
+  constructor(rsc: R, ctx: Response | H3Event | Record<string, any>)
+  constructor(rsc: R, ctx?: Response | H3Event | Record<string, any>) {
     super()
+    if (ctx) ResourceCollection.ctx = ctx
     this.resource = rsc
+
+    if (ctx) {
+      const url = extractRequestUrl(ctx)
+      if (url) {
+        setRequestUrl(url)
+      }
+
+      this.res = extractResponseFromCtx(ctx)
+    }
   }
 
   /**
@@ -320,17 +334,31 @@ export class ResourceCollection<
     return this
   }
 
+  /**
+   * Build a response object, optionally accepting a raw response to mutate in withResponse.
+   */
   response (): ServerResponse<CollectionBody<R>>
+  /**
+   * Build a response object, optionally accepting a raw response to mutate in withResponse.
+   * @param res Optional raw response object (e.g. Express Response or H3Event res)
+   */
   response (res: H3Event['res']): ServerResponse<CollectionBody<R>>
-  response (res?: H3Event['res']): ServerResponse<CollectionBody<R>> {
-    const rawResponse = res ?? this.res as never
+  response (res: Response): ServerResponse<CollectionBody<R>>
+  /**
+   * Build a response object, optionally accepting a raw response to mutate in withResponse.
+   * 
+   * @param res Optional raw response object (e.g. Express Response or H3Event res)
+   * @returns 
+   */
+  response (res?: H3Event['res'] | Response): ServerResponse<CollectionBody<R>> {
+    const rawResponse = res ?? this.res ?? (ResourceCollection.ctx as any)?.res ?? ResourceCollection.ctx as never
 
     return this.runResponse({
       ensureJson: () => this.json(),
       rawResponse,
       body: () => this.body,
       createServerResponse: (raw, body) => {
-        const response = new ServerResponse(raw, body)
+        const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
           response,
           raw,
@@ -376,7 +404,7 @@ export class ResourceCollection<
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res,
+      rawResponse: this.res ?? (ResourceCollection.ctx as any)?.res ?? ResourceCollection.ctx as never,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -409,7 +437,7 @@ export class ResourceCollection<
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res,
+      rawResponse: this.res ?? (ResourceCollection.ctx as any)?.res ?? ResourceCollection.ctx as never,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -439,7 +467,7 @@ export class ResourceCollection<
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res,
+      rawResponse: this.res ?? (ResourceCollection.ctx as any)?.res ?? ResourceCollection.ctx as never,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {

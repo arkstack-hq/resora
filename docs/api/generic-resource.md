@@ -10,8 +10,15 @@ Flexible resource wrapper for handling:
 ## Constructor
 
 ```ts
-new GenericResource(resource, response?)
+new GenericResource(resource, context?)
 ```
+
+### Parameters
+
+| Parameter | Type                                  | Description                                  |
+| --------- | ------------------------------------- | -------------------------------------------- |
+| resource  | ResourceData                          | Data to transform                            |
+| context   | `{ req, res }` \| Response (optional) | HTTP context for auto-send and URL detection |
 
 ---
 

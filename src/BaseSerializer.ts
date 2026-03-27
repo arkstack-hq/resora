@@ -7,12 +7,17 @@ import {
 import {
     getGlobalCase,
     getGlobalResponseStructure,
+    loadRuntimeConfig,
     mergeMetadata,
     resolveMergeWhen,
     resolveWhen,
     resolveWhenNotNull,
     resolveWithHookMetadata,
+    setCtx as setCtxState,
 } from './utilities'
+
+import { H3Event } from 'h3'
+import { Response } from 'express'
 
 interface SerializerConstructor {
     preferredCase?: CaseStyle
@@ -35,6 +40,7 @@ export abstract class BaseSerializer<TResource = any> {
     static responseStructure?: ResponseStructureConfig
     static config?: () => ResourceLevelConfig
 
+    protected static ctx?: Response | H3Event | Record<string, any>
     protected instanceConfig?: ResourceLevelConfig
     protected additionalMeta?: MetaData
     protected called: {
@@ -49,6 +55,24 @@ export abstract class BaseSerializer<TResource = any> {
         then?: boolean
         toResponse?: boolean
     } = {}
+
+    constructor() {
+        void loadRuntimeConfig()
+    }
+
+    /**
+     * Sets the current request context for pagination URL detection.
+     * Call from middleware to make the request path available to all
+     * resources created during the request lifecycle.
+     * 
+     * Accepts an Express Request, H3Event, `{ req }` object, or a plain URL string.
+     * 
+     * @param ctx The request context.
+     */
+    static setCtx (ctx: unknown): void {
+        setCtxState(ctx)
+        this.ctx = ctx as any
+    }
 
     /**
      * Helper method to conditionally resolve a value based on a condition. 

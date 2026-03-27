@@ -1,7 +1,7 @@
+import { Resource, ResourceCollection } from 'src'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { H3 } from 'h3'
-import { Resource, ResourceCollection } from 'src'
 
 let app: H3
 
@@ -109,14 +109,14 @@ describe('H3 Requests', () => {
         expect(jsonResponse).toEqual({
             data: resource.data,
             links: {
-                last: 'https://localhost/users?page=10',
+                last: '/users?page=10',
             },
             meta: {
                 total: 100,
                 per_page: 10,
                 current_page: 1,
                 last_page: 10,
-                path: '/users',
+                path: '/users?page=1',
             },
         })
     })
@@ -158,14 +158,14 @@ describe('H3 Requests', () => {
         expect(jsonResponse).toEqual({
             data: [],
             links: {
-                last: 'https://localhost/users?page=1',
+                last: '/users?page=1',
             },
             meta: {
                 total: 0,
                 per_page: 10,
                 current_page: 1,
                 last_page: 1,
-                path: '/users',
+                path: '/users?page=1',
             },
         })
     })

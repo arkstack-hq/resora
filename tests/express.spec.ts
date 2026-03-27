@@ -22,6 +22,36 @@ describe('Connect-style Requests (Express)', () => {
         expect(response.body).toEqual({ data: resource })
     })
 
+    it('should can use response from the global context object', async () => {
+        const resource = { id: 1, name: 'Test Resource' }
+        app.get('/test', async (req, res) => {
+            Resource.setCtx({ res, req })
+
+            return await new Resource(resource)
+                .response()
+                .setStatusCode(202)
+        })
+
+        const response = await supertest(app).get('/test')
+        expect(response.body).toEqual({ data: resource })
+        expect(response.status).toEqual(202)
+    })
+
+    it('should can use the global response object', async () => {
+        const resource = { id: 1, name: 'Test Resource' }
+        app.get('/test', async (req, res) => {
+            Resource.setCtx(res)
+
+            return await new Resource(resource)
+                .response()
+                .setStatusCode(202)
+        })
+
+        const response = await supertest(app).get('/test')
+        expect(response.body).toEqual({ data: resource })
+        expect(response.status).toEqual(202)
+    })
+
     it('should allow chaining of methods', async () => {
         const resource = { id: 1, name: 'Test Resource' }
         app.get('/test', async (req, res) => {
@@ -101,14 +131,14 @@ describe('Connect-style Requests (Express)', () => {
         expect(response.body).toEqual({
             data: resource.data,
             links: {
-                last: 'https://localhost/users?page=10',
+                last: '/test?page=10',
             },
             meta: {
                 total: 100,
                 per_page: 10,
                 current_page: 1,
                 last_page: 10,
-                path: '/users',
+                path: '/test?page=1',
             },
         })
     })
@@ -144,14 +174,14 @@ describe('Connect-style Requests (Express)', () => {
         expect(response.body).toEqual({
             data: resource.data,
             links: {
-                last: 'https://localhost/users?page=1',
+                last: '/test?page=1',
             },
             meta: {
                 total: 0,
                 per_page: 10,
                 current_page: 1,
                 last_page: 1,
-                path: '/users',
+                path: '/test?page=1',
             },
         })
     })
@@ -221,6 +251,7 @@ describe('Connect-style Requests (Express)', () => {
             meta: {
                 current_page: 1,
                 total: 10,
+                path: '/test?page=1',
                 fromWithResponse: true,
             },
         })

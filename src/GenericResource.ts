@@ -17,12 +17,15 @@ import {
   appendRootProperties,
   buildPaginationExtras,
   buildResponseEnvelope,
+  extractRequestUrl,
+  extractResponseFromCtx,
   getCaseTransformer,
   getPaginationExtraKeys,
   isArkormLikeCollection,
   isArkormLikeModel,
   normalizeSerializableData,
   sanitizeConditionalAttributes,
+  setRequestUrl,
   transformKeys,
 } from './utilities'
 
@@ -39,6 +42,7 @@ export class GenericResource<
 > extends BaseSerializer<R> {
   [key: string]: any;
   private body: GenericBody<R> = { data: {} as any }
+  private res?: Response
   public resource: R
   public collects?: typeof Resource<T>
   protected withResponseContext?: {
@@ -46,9 +50,19 @@ export class GenericResource<
     raw: Response | H3Event['res']
   }
 
-  constructor(rsc: R, private res?: Response) {
+  constructor(rsc: R, ctx?: Response | H3Event | Record<string, any>) {
     super()
+    if (ctx) GenericResource.ctx = ctx
     this.resource = rsc
+
+    if (ctx) {
+      const url = extractRequestUrl(ctx)
+      if (url) {
+        setRequestUrl(url)
+      }
+
+      this.res = extractResponseFromCtx(ctx)
+    }
 
     const hasDataPayload = !!this.resource
       && typeof this.resource === 'object'
@@ -337,21 +351,22 @@ export class GenericResource<
    * @param res 
    */
   response (res: H3Event['res']): ServerResponse<GenericBody<R>>
+  response (res: Response): ServerResponse<GenericBody<R>>
   /**
    * Build a response object, writing to the provided raw response if possible.
    * 
    * @param res 
    * @returns 
    */
-  response (res?: H3Event['res']): ServerResponse<GenericBody<R>> {
-    const rawResponse = res ?? this.res as never
+  response (res?: Response | H3Event['res']): ServerResponse<GenericBody<R>> {
+    const rawResponse = res ?? this.res ?? (GenericResource.ctx as any)?.res ?? GenericResource.ctx as never
 
     return this.runResponse({
       ensureJson: () => this.json(),
       rawResponse,
       body: () => this.body,
       createServerResponse: (raw, body) => {
-        const response = new ServerResponse(raw, body)
+        const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
           response,
           raw,
@@ -391,7 +406,7 @@ export class GenericResource<
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res,
+      rawResponse: this.res ?? (GenericResource.ctx as any)?.res ?? GenericResource.ctx as never,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -424,7 +439,7 @@ export class GenericResource<
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res,
+      rawResponse: this.res ?? (GenericResource.ctx as any)?.res ?? GenericResource.ctx as never,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -454,7 +469,7 @@ export class GenericResource<
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res,
+      rawResponse: this.res ?? (GenericResource.ctx as any)?.res ?? GenericResource.ctx as never,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {

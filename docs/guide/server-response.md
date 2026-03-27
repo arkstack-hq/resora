@@ -13,9 +13,11 @@ Binds the internal Resource instance to a framework-specific response object.
 ### Parameters
 
 - `res`
-  The framework’s native response object (e.g., H3 `res`, Express `res`).
+  The framework’s native response object (e.g., H3 `res`, Express `res`) or a full context object containing `{ req, res }`.
 
-  > For Express and other frameworks implementing the connect-style middleware, this can be skipped, in which case Resora will use the response object provided in the the `Resource` or `ResourceCollection` constructor which is required by default.
+  > For Express and other frameworks implementing the connect-style middleware, this can be skipped, in which case Resora will use the response object provided in the `Resource` or `ResourceCollection` constructor.
+  >
+  > The constructor accepts either a bare response object or a full `{ req, res }` context. When a context is passed, Resora also extracts the request URL for [automatic pagination link generation](/guide/pagination-cursor-recipes#url-detection).
 
 ### Returns
 

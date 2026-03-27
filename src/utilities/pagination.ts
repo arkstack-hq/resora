@@ -1,10 +1,12 @@
 import {
+    extractRequestUrl,
     getGlobalBaseUrl,
     getGlobalCursorMeta,
     getGlobalPageName,
     getGlobalPaginatedExtras,
     getGlobalPaginatedLinks,
     getGlobalPaginatedMeta,
+    getRequestUrl,
 } from './state'
 
 import { Config } from '../types'
@@ -37,12 +39,82 @@ export const getPaginationExtraKeys = (): {
     }
 }
 
+const parsePageValue = (value: string | null): number | undefined => {
+    if (value === null) {
+        return undefined
+    }
+
+    const page = Number(value)
+
+    if (!Number.isInteger(page) || page < 1) {
+        return undefined
+    }
+
+    return page
+}
+
+const getPageValueFromUrl = (
+    requestUrl: string,
+    pageName: string,
+): string | null => {
+    try {
+        return new URL(requestUrl, 'http://resora.local').searchParams.get(pageName)
+    } catch {
+        const qIndex = requestUrl.indexOf('?')
+
+        if (qIndex < 0) {
+            return null
+        }
+
+        return new URLSearchParams(requestUrl.slice(qIndex + 1)).get(pageName)
+    }
+}
+
+/**
+ * Resolves the current page number from a request context or the globally
+ * stored request URL, using the configured page query name by default.
+ *
+ * @param ctx Optional request context or URL.
+ * @param pageName Optional page query parameter name.
+ * @returns
+ */
+export const resolveCurrentPage = (
+    ctx?: unknown,
+    pageName = getGlobalPageName() || 'page',
+): number | undefined => {
+    const requestUrl = typeof ctx === 'undefined'
+        ? getRequestUrl()
+        : extractRequestUrl(ctx)
+
+    if (!requestUrl) {
+        return undefined
+    }
+
+    return parsePageValue(getPageValueFromUrl(requestUrl, pageName))
+}
+
+/**
+ * Creates an Arkorm-compatible current-page resolver backed by Resora's
+ * request-context URL parsing.
+ *
+ * @param ctx Optional request context or URL.
+ * @returns
+ */
+export const createArkormCurrentPageResolver = (ctx?: unknown) => {
+    return (pageName: string): number | undefined => resolveCurrentPage(ctx, pageName)
+}
+
 /**
  * Builds a pagination URL for a given page number and path, using the global base URL and page name configuration.
- * 
+ *
+ * URL resolution follows a three-tier priority:
+ * 1. Full URL – when `pathName` is absolute or `baseUrl` is set alongside a path
+ * 2. Path-relative – when only a path is available (e.g. `/users?page=2`)
+ * 3. Bare fallback – `/?page=X` when neither base URL nor path is available
+ *
  * @param page The page number for which to build the URL. If `undefined`, the function will return `undefined`.
- * @param pathName The path to use for the URL. If not provided, it will default to an empty string. 
- * @returns 
+ * @param pathName The path to use for the URL. If not provided, it will default to an empty string.
+ * @returns
  */
 const buildPageUrl = (
     page: number | undefined,
@@ -52,28 +124,86 @@ const buildPageUrl = (
         return undefined
     }
 
-    const rawPath = pathName || ''
+    const rawPath = pathName || getRequestUrl() || ''
     const base = getGlobalBaseUrl() || ''
+    const pageName = getGlobalPageName() || 'page'
 
-    const isAbsolutePath = /^https?:\/\//i.test(rawPath)
-    const normalizedBase = base.replace(/\/$/, '')
-    const normalizedPath = rawPath.replace(/^\//, '')
-    const root = isAbsolutePath
-        ? rawPath
-        : normalizedBase
-            ? normalizedPath
-                ? `${normalizedBase}/${normalizedPath}`
-                : normalizedBase
-            : ''
+    // Split rawPath into pathname and existing query string
+    const qIndex = rawPath.indexOf('?')
+    const pathOnly = qIndex >= 0 ? rawPath.slice(0, qIndex) : rawPath
+    const existingSearch = qIndex >= 0 ? rawPath.slice(qIndex + 1) : ''
 
-    if (!root) {
-        return undefined
+    // Tier 1a: path is already a full URL – use it directly
+    if (/^https?:\/\//i.test(pathOnly)) {
+        const url = new URL(rawPath)
+        url.searchParams.set(pageName, String(page))
+
+        return url.toString()
     }
 
-    const url = new URL(root)
-    url.searchParams.set(getGlobalPageName() || 'page', String(page))
+    const normalizedBase = base.replace(/\/$/, '')
+    const normalizedPath = pathOnly.replace(/^\//, '')
 
-    return url.toString()
+    // Tier 1b: base is a full URL – combine with path
+    if (/^https?:\/\//i.test(normalizedBase)) {
+        const root = normalizedPath
+            ? `${normalizedBase}/${normalizedPath}`
+            : normalizedBase
+        const url = new URL(root)
+        if (existingSearch) {
+            for (const [k, v] of new URLSearchParams(existingSearch)) {
+                url.searchParams.set(k, v)
+            }
+        }
+        url.searchParams.set(pageName, String(page))
+
+        return url.toString()
+    }
+
+    // Tier 2 / 3: path-relative or bare fallback
+    const segments = [normalizedBase, normalizedPath].filter(Boolean).join('/')
+    const pathBase = segments ? `/${segments}` : '/'
+
+    const params = new URLSearchParams(existingSearch)
+    params.set(pageName, String(page))
+
+    return `${pathBase}?${params.toString()}`
+}
+
+/**
+ * Derives page numbers (firstPage, lastPage, nextPage, prevPage) from an
+ * Arkorm-style pagination meta object so that buildPageUrl() can generate
+ * links that respect the auto-detected request URL and query string.
+ */
+const derivePageNumbers = (
+    meta: Record<string, any>,
+): Record<string, number | undefined> => {
+    const currentPage = meta.currentPage as number | undefined
+    const lastPage = meta.lastPage as number | undefined
+    const hasMorePages = meta.hasMorePages as boolean | undefined
+
+    return {
+        firstPage: typeof lastPage === 'number' ? 1 : undefined,
+        lastPage,
+        nextPage: typeof lastPage === 'number'
+            ? (typeof currentPage === 'number' && currentPage < lastPage ? currentPage + 1 : undefined)
+            : (hasMorePages && typeof currentPage === 'number' ? currentPage + 1 : undefined),
+        prevPage: typeof currentPage === 'number' && currentPage > 1
+            ? currentPage - 1
+            : undefined,
+    }
+}
+
+/**
+ * Extracts a pagination link (e.g. 'first', 'last', 'prev', 'next') from a 
+ * pagination object, if it exists.
+ * 
+ * @param pagination 
+ * @param rel 
+ * @returns 
+ */
+export const hasPaginationLink = (pagination: any, rel: string): string | undefined => {
+    return pagination.links && Object.prototype.hasOwnProperty.call(pagination.links, rel)
 }
 
 /**
@@ -93,7 +223,15 @@ export const buildPaginationExtras = (resource: any): Record<string, any> => {
         && typeof resource.meta === 'object'
         && (Array.isArray(resource.data) || isArkormLikeCollection(resource.data))
 
-    const arkormLinks = isArkormPaginatorLike
+    // Derive page numbers from Arkorm paginator meta so buildPageUrl() can
+    // generate links that respect the auto-detected request URL / query string.
+    const arkormPageNumbers = isArkormPaginatorLike
+        ? derivePageNumbers(resource.meta)
+        : undefined
+
+    // Arkorm paginator URLs are kept as a fallback when buildPageUrl() cannot
+    // produce a link (i.e. no request URL, no baseUrl, and no explicit path).
+    const arkormFallbackLinks = isArkormPaginatorLike
         ? {
             first: typeof resource.firstPageUrl === 'function' ? resource.firstPageUrl() : undefined,
             last: typeof resource.lastPageUrl === 'function' ? resource.lastPageUrl() : undefined,
@@ -102,20 +240,11 @@ export const buildPaginationExtras = (resource: any): Record<string, any> => {
         }
         : undefined
 
-    const sanitizedArkormLinks = arkormLinks
-        ? Object.entries(arkormLinks).reduce<Record<string, any>>((accumulator, [key, value]) => {
-            if (typeof value !== 'undefined') {
-                accumulator[key] = value
-            }
-
-            return accumulator
-        }, {})
-        : undefined
-
     const pagination = resource?.pagination || (isArkormPaginatorLike
         ? {
             ...resource.meta,
-            links: resource.links || sanitizedArkormLinks,
+            ...(arkormPageNumbers || {}),
+            path: resource.urlDriver?.path,
         }
         : undefined)
     const cursor = resource?.cursor
@@ -124,11 +253,37 @@ export const buildPaginationExtras = (resource: any): Record<string, any> => {
     const linksBlock: Record<string, any> = {}
 
     if (pagination) {
+        const effectivePath = getRequestUrl() || pagination.path
+        const currentPagePath = effectivePath
+            ? (buildPageUrl(pagination.currentPage, effectivePath) ?? effectivePath)
+            : undefined
+
+        const linksSource: Record<string, any> = {
+            first: hasPaginationLink(pagination, 'first')
+                ? pagination.links.first
+                : buildPageUrl(pagination.firstPage, effectivePath) ?? arkormFallbackLinks?.first,
+            last: hasPaginationLink(pagination, 'last')
+                ? pagination.links.last
+                : buildPageUrl(pagination.lastPage, effectivePath) ?? arkormFallbackLinks?.last,
+            prev: hasPaginationLink(pagination, 'prev')
+                ? pagination.links.prev
+                : buildPageUrl(pagination.prevPage, effectivePath) ?? arkormFallbackLinks?.prev,
+            next: hasPaginationLink(pagination, 'next')
+                ? pagination.links.next
+                : buildPageUrl(pagination.nextPage, effectivePath) ?? arkormFallbackLinks?.next,
+        }
+
+        // Resolve links for the meta block: explicit pagination.links first,
+        // then computed links from buildPageUrl() + Arkorm fallback.
+        const resolvedLinks = Object.fromEntries(
+            Object.entries(linksSource).filter(([, v]) => v !== undefined),
+        )
+
         const metaSource: Record<string, any> = {
             to: pagination.to,
             from: pagination.from,
-            links: pagination.links,
-            path: pagination.path,
+            links: pagination.links || (isArkormPaginatorLike && Object.keys(resolvedLinks).length ? resolvedLinks : undefined),
+            path: currentPagePath,
             total: pagination.total,
             per_page: pagination.perPage,
             last_page: pagination.lastPage,
@@ -142,21 +297,6 @@ export const buildPaginationExtras = (resource: any): Record<string, any> => {
             if (typeof value !== 'undefined') {
                 metaBlock[outputKey] = value
             }
-        }
-
-        const linksSource: Record<string, any> = {
-            first: pagination.links && Object.prototype.hasOwnProperty.call(pagination.links, 'first')
-                ? pagination.links.first
-                : buildPageUrl(pagination.firstPage, pagination.path),
-            last: pagination.links && Object.prototype.hasOwnProperty.call(pagination.links, 'last')
-                ? pagination.links.last
-                : buildPageUrl(pagination.lastPage, pagination.path),
-            prev: pagination.links && Object.prototype.hasOwnProperty.call(pagination.links, 'prev')
-                ? pagination.links.prev
-                : buildPageUrl(pagination.prevPage, pagination.path),
-            next: pagination.links && Object.prototype.hasOwnProperty.call(pagination.links, 'next')
-                ? pagination.links.next
-                : buildPageUrl(pagination.nextPage, pagination.path),
         }
 
         for (const [sourceKey, outputKey] of Object.entries(getGlobalPaginatedLinks() as Config['paginatedLinks'])) {
