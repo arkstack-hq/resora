@@ -186,6 +186,10 @@ export abstract class BaseSerializer<TResource = any> {
         this.called.withResponse = true
         input.callWithResponse(response, input.rawResponse)
 
+        if (typeof (response as any)?.setBody === 'function') {
+            (response as any).setBody(input.body())
+        }
+
         return response
     }
 
@@ -210,9 +214,10 @@ export abstract class BaseSerializer<TResource = any> {
         input.ensureJson()
 
         const initialBody = input.body()
+        let response: TServerResponse | undefined
 
         if (typeof input.rawResponse !== 'undefined') {
-            const response = input.createServerResponse(input.rawResponse, initialBody)
+            response = input.createServerResponse(input.rawResponse, initialBody)
 
             this.called.withResponse = true
             input.callWithResponse(response, input.rawResponse)
@@ -222,9 +227,16 @@ export abstract class BaseSerializer<TResource = any> {
         }
 
         const resolvedBody = input.body()
+
+        if (typeof (response as any)?.setBody === 'function') {
+            (response as any).setBody(resolvedBody)
+        }
+
         const resolved = Promise.resolve(resolvedBody).then(input.onfulfilled, input.onrejected)
 
-        if (typeof input.rawResponse !== 'undefined' && input.sendRawResponse) {
+        if (typeof (response as any)?.send === 'function') {
+            (response as any).send(resolvedBody)
+        } else if (typeof input.rawResponse !== 'undefined' && input.sendRawResponse) {
             input.sendRawResponse(input.rawResponse, resolvedBody)
         }
 
