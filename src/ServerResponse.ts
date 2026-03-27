@@ -33,9 +33,17 @@ export class ServerResponse<
     setStatusCode (status: number) {
         this._status = status
 
-        if ('status' in this.response && typeof this.response.status !== 'function') {
-            this.response.status = status
-        }
+        return this
+    }
+
+    /**
+     * Replace the response body that will be dispatched.
+     *
+     * @param body
+     * @returns The current ServerResponse instance
+     */
+    setBody (body: R) {
+        this.body = body
 
         return this
     }
@@ -124,6 +132,40 @@ export class ServerResponse<
     }
 
     /**
+     * Dispatch the current body and apply any deferred transport state.
+     *
+     * @param body Optional body override
+     * @returns The dispatched response body
+     */
+    send (body?: R) {
+        if (typeof body !== 'undefined') {
+            this.body = body
+        }
+
+        if ('send' in this.response && typeof this.response.send === 'function') {
+            if ('statusCode' in this.response) {
+                this.response.statusCode = this._status
+            }
+
+            const sentResponse = this.response.send(this.body)
+
+            if (sentResponse && 'status' in sentResponse && typeof sentResponse.status === 'function') {
+                sentResponse.status(this._status)
+            } else if ('status' in this.response && typeof this.response.status === 'function') {
+                this.response.status(this._status)
+            }
+
+            return this.body
+        }
+
+        if ('status' in this.response && typeof this.response.status !== 'function') {
+            this.response.status = this._status
+        }
+
+        return this.body
+    }
+
+    /**
      * Promise-like then method to allow chaining with async/await or .then() syntax
      * 
      * @param onfulfilled  Callback to handle the fulfilled state of the promise, receiving the response body
@@ -134,15 +176,7 @@ export class ServerResponse<
         onfulfilled?: ((value: R) => TResult1 | PromiseLike<TResult1>) | null,
         onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null,
     ): Promise<TResult1 | TResult2> {
-        const resolved = Promise.resolve(this.body).then(onfulfilled, onrejected)
-
-        if ('send' in this.response) {
-            this.response.send(this.body)
-            this.response.status(this._status)
-        }
-
-        if (typeof this.response.status !== 'function' && this._status !== 200)
-            this.response.status = this._status
+        const resolved = Promise.resolve(this.send()).then(onfulfilled, onrejected)
 
         return resolved
     }
