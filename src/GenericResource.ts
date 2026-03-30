@@ -204,6 +204,10 @@ export class GenericResource<
     return this.resource
   }
 
+  protected getSerializerType () {
+    return 'generic' as const
+  }
+
   private getPayloadKey () {
     const { wrap, rootKey, factory } = this.resolveResponseStructure()
 
@@ -274,6 +278,7 @@ export class GenericResource<
         },
         rootKey
       ) as GenericBody<R>
+      this.body = this.applySerializePlugins(this.body) as GenericBody<R>
     }
 
     // if (this.collects) console.log(this.body, this.constructor.name, this.collects.name)
@@ -359,7 +364,7 @@ export class GenericResource<
    * @returns 
    */
   response (res?: Response | H3Event['res']): ServerResponse<GenericBody<R>> {
-    const rawResponse = res ?? this.res ?? (GenericResource.ctx as any)?.res ?? GenericResource.ctx as never
+    const rawResponse = this.resolveRawResponse(res ?? this.res) as Response | H3Event['res']
 
     return this.runResponse({
       ensureJson: () => this.json(),
@@ -406,7 +411,7 @@ export class GenericResource<
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res ?? (GenericResource.ctx as any)?.res ?? GenericResource.ctx as never,
+      rawResponse: this.resolveRawResponse(this.res) as Response | H3Event['res'],
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -420,7 +425,7 @@ export class GenericResource<
         this.withResponse(response, raw)
       },
       sendRawResponse: (raw, body) => {
-        raw.send(body)
+        this.sendRawResponseBody(raw, body)
       },
       onfulfilled,
       onrejected,
@@ -439,7 +444,7 @@ export class GenericResource<
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res ?? (GenericResource.ctx as any)?.res ?? GenericResource.ctx as never,
+      rawResponse: this.resolveRawResponse(this.res) as Response | H3Event['res'],
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -453,7 +458,7 @@ export class GenericResource<
         this.withResponse(response, raw)
       },
       sendRawResponse: (raw, body) => {
-        raw.send(body)
+        this.sendRawResponseBody(raw, body)
       },
       onrejected,
     })
@@ -469,7 +474,7 @@ export class GenericResource<
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res ?? (GenericResource.ctx as any)?.res ?? GenericResource.ctx as never,
+      rawResponse: this.resolveRawResponse(this.res) as Response | H3Event['res'],
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -483,7 +488,7 @@ export class GenericResource<
         this.withResponse(response, raw)
       },
       sendRawResponse: (raw, body) => {
-        raw.send(body)
+        this.sendRawResponseBody(raw, body)
       },
       onfulfilled: onfinally as any,
       onrejected: onfinally as any,

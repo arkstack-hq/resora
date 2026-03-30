@@ -120,4 +120,6 @@ The plugin system will allow developers to:
 
 These utilities will enable clean, declarative conditional serialization without verbose logic inside data().
 
-🔲 Implemented
+✅ Implemented
+
+The first phase ships `registerPlugin()` in core plus opt-in packages such as `@resora/plugin-clear-router`.

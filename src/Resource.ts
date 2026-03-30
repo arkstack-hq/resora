@@ -158,6 +158,10 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
     return this.resource
   }
 
+  protected getSerializerType () {
+    return 'resource' as const
+  }
+
   private getPayloadKey () {
     const { wrap, rootKey, factory } = this.resolveResponseStructure()
 
@@ -205,6 +209,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
       }) as ResourceBody<R>
 
       this.body = appendRootProperties(this.body, customMeta, rootKey) as ResourceBody<R>
+      this.body = this.applySerializePlugins(this.body) as ResourceBody<R>
     }
 
     return this
@@ -284,7 +289,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
    * @returns 
    */
   response (res?: H3Event['res'] | Response): ServerResponse<ResourceBody<R>> {
-    const rawResponse = res ?? this.res ?? (Resource.ctx as any)?.res ?? Resource.ctx as never
+    const rawResponse = this.resolveRawResponse(res ?? this.res) as H3Event['res'] | Response
 
     return this.runResponse({
       ensureJson: () => this.json(),
@@ -331,7 +336,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res ?? (Resource.ctx as any)?.res ?? Resource.ctx as never,
+      rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -345,7 +350,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
         this.withResponse(response, raw)
       },
       sendRawResponse: (raw, body) => {
-        raw.send(body)
+        this.sendRawResponseBody(raw, body)
       },
       onfulfilled,
       onrejected,
@@ -364,7 +369,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res ?? (Resource.ctx as any)?.res ?? Resource.ctx as never,
+      rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -378,7 +383,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
         this.withResponse(response, raw)
       },
       sendRawResponse: (raw, body) => {
-        raw.send(body)
+        this.sendRawResponseBody(raw, body)
       },
       onrejected,
     })
@@ -394,7 +399,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res ?? (Resource.ctx as any)?.res ?? Resource.ctx as never,
+      rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -408,7 +413,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
         this.withResponse(response, raw)
       },
       sendRawResponse: (raw, body) => {
-        raw.send(body)
+        this.sendRawResponseBody(raw, body)
       },
       onfulfilled: onfinally as any,
       onrejected: onfinally as any,

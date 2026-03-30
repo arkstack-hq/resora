@@ -176,6 +176,10 @@ export class ResourceCollection<
     return this.resource
   }
 
+  protected getSerializerType () {
+    return 'collection' as const
+  }
+
   /**
    * Get the appropriate key for the response payload based on the current response 
    * structure configuration.
@@ -251,6 +255,7 @@ export class ResourceCollection<
         },
         rootKey
       ) as CollectionBody<R>
+      this.body = this.applySerializePlugins(this.body) as CollectionBody<R>
     }
 
     return this
@@ -351,7 +356,7 @@ export class ResourceCollection<
    * @returns 
    */
   response (res?: H3Event['res'] | Response): ServerResponse<CollectionBody<R>> {
-    const rawResponse = res ?? this.res ?? (ResourceCollection.ctx as any)?.res ?? ResourceCollection.ctx as never
+    const rawResponse = this.resolveRawResponse(res ?? this.res) as H3Event['res'] | Response
 
     return this.runResponse({
       ensureJson: () => this.json(),
@@ -393,8 +398,8 @@ export class ResourceCollection<
   /**
    * Promise-like then method to allow chaining with async/await or .then() syntax
    * 
-   * @param onfulfilled  Callback to handle the fulfilled state of the promise, receiving the response body
-   * @param onrejected  Callback to handle the rejected state of the promise, receiving the error reason
+   * @param onfulfilled  Callback to handle the fulfilled state of the promise
+   * @param onrejected  Callback to handle the rejected state of the promise
    * @returns A promise that resolves to the result of the onfulfilled or onrejected callback 
    */
   then<TResult1 = CollectionBody<R>, TResult2 = never> (
@@ -404,7 +409,7 @@ export class ResourceCollection<
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res ?? (ResourceCollection.ctx as any)?.res ?? ResourceCollection.ctx as never,
+      rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -418,7 +423,7 @@ export class ResourceCollection<
         this.withResponse(response, raw)
       },
       sendRawResponse: (raw, body) => {
-        raw.send(body)
+        this.sendRawResponseBody(raw, body)
       },
       onfulfilled,
       onrejected,
@@ -437,7 +442,7 @@ export class ResourceCollection<
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res ?? (ResourceCollection.ctx as any)?.res ?? ResourceCollection.ctx as never,
+      rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -451,7 +456,7 @@ export class ResourceCollection<
         this.withResponse(response, raw)
       },
       sendRawResponse: (raw, body) => {
-        raw.send(body)
+        this.sendRawResponseBody(raw, body)
       },
       onrejected,
     })
@@ -467,7 +472,7 @@ export class ResourceCollection<
     return this.runThen({
       ensureJson: () => this.json(),
       body: () => this.body,
-      rawResponse: this.res ?? (ResourceCollection.ctx as any)?.res ?? ResourceCollection.ctx as never,
+      rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -481,7 +486,7 @@ export class ResourceCollection<
         this.withResponse(response, raw)
       },
       sendRawResponse: (raw, body) => {
-        raw.send(body)
+        this.sendRawResponseBody(raw, body)
       },
       onfulfilled: onfinally as any,
       onrejected: onfinally as any,

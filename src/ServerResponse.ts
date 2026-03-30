@@ -1,4 +1,5 @@
 import { Collectible, NonCollectible, ResourceData } from './types'
+import { runPluginHook } from './plugins'
 
 import type { H3Event } from 'h3'
 import type { Response } from 'express'
@@ -142,6 +143,22 @@ export class ServerResponse<
             this.body = body
         }
 
+        const beforeSend = runPluginHook('beforeSend', {
+            response: this,
+            rawResponse: this.response,
+            body: this.body,
+            status: this._status,
+            headers: {
+                ...this.headers,
+            },
+        })
+
+        this.body = beforeSend.body
+        this._status = beforeSend.status
+        this.headers = {
+            ...beforeSend.headers,
+        }
+
         if ('send' in this.response && typeof this.response.send === 'function') {
             if ('statusCode' in this.response) {
                 this.response.statusCode = this._status
@@ -155,12 +172,32 @@ export class ServerResponse<
                 this.response.status(this._status)
             }
 
+            runPluginHook('afterSend', {
+                response: this,
+                rawResponse: this.response,
+                body: this.body,
+                status: this._status,
+                headers: {
+                    ...this.headers,
+                },
+            })
+
             return this.body
         }
 
         if ('status' in this.response && typeof this.response.status !== 'function') {
             this.response.status = this._status
         }
+
+        runPluginHook('afterSend', {
+            response: this,
+            rawResponse: this.response,
+            body: this.body,
+            status: this._status,
+            headers: {
+                ...this.headers,
+            },
+        })
 
         return this.body
     }

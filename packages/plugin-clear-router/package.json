@@ -1,0 +1,48 @@
+{
+    "name": "@resora/plugin-clear-router",
+    "version": "0.1.0",
+    "description": "Opt-in bridge plugin for using resora return values inside clear-router handlers.",
+    "keywords": [
+        "resora",
+        "clear-router",
+        "express",
+        "h3",
+        "plugin",
+        "typescript"
+    ],
+    "license": "MIT",
+    "type": "module",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.cts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
+        "./package.json": "./package.json"
+    },
+    "files": [
+        "dist",
+        "README.md"
+    ],
+    "scripts": {
+        "build": "pnpm tsdown",
+        "test": "pnpm vitest run tests/**/*.spec.ts",
+        "lint": "eslint src tests"
+    },
+    "dependencies": {
+        "resora": "workspace:*"
+    },
+    "peerDependencies": {
+        "clear-router": "^2.3.3"
+    },
+    "peerDependenciesMeta": {
+        "clear-router": {
+            "optional": false
+        }
+    },
+    "devDependencies": {
+        "clear-router": "^2.3.3"
+    }
+}

@@ -174,6 +174,23 @@ It works with:
 
 Adapters can be added without changing application logic.
 
+## Plugin System
+
+Resora exposes a first-class plugin registry for opt-in integrations and lifecycle extensions.
+
+```ts
+import { registerPlugin } from 'resora';
+import { clearRouterExpressPlugin } from '@resora/plugin-clear-router';
+
+registerPlugin(clearRouterExpressPlugin);
+```
+
+Plugins can:
+
+- hook into serialization and response dispatch
+- inject framework integrations without core changes
+- register reusable transformation utilities
+
 ## Conditional Rendering Example
 
 ```ts

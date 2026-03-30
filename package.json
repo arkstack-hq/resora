@@ -1,6 +1,6 @@
 {
   "name": "resora",
-  "version": "0.2.18",
+  "version": "1.0.0",
   "description": "A structured API response layer for Node.js and TypeScript with automatic JSON responses, collection support, and pagination handling.",
   "keywords": [
     "api",
@@ -48,11 +48,12 @@
   "scripts": {
     "cmd": "tsx src/cli/index.ts",
     "lint": "eslint",
-    "test": "pnpm vitest",
+    "test": "pnpm vitest --run",
+    "test:watch": "pnpm vitest --watch",
     "test:coverage": "pnpm vitest --coverage --watch=false",
     "build": "pnpm tsdown",
     "barrel": "barrelize",
-    "prepublishOnly": "pnpm build && pnpm vitest --watch=false",
+    "prepublishOnly": "pnpm build && pnpm test",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs"

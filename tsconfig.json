@@ -15,11 +15,15 @@
     "types": ["node", "vitest", "express"],
     "baseUrl": ".",
     "paths": {
-      "resora": ["src/index.ts"]
+      "resora": ["src/index.ts"],
+      "@resora/plugin-clear-router": [
+        "packages/plugin-clear-router/src/index.ts"
+      ]
     }
   },
   "include": [
     "src/**/*",
+    "packages/**/*",
     "types/**/*",
     "tests/**/*",
     "resora.config.ts",

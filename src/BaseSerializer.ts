@@ -2,9 +2,12 @@ import {
     CaseStyle,
     MetaData,
     ResourceLevelConfig,
+    ResponseKind,
     ResponseStructureConfig,
 } from './types'
 import {
+    extractResponseFromCtx,
+    getCtx,
     getGlobalCase,
     getGlobalResponseStructure,
     loadRuntimeConfig,
@@ -18,6 +21,7 @@ import {
 
 import { H3Event } from 'h3'
 import { Response } from 'express'
+import { runPluginHook } from './plugins'
 
 interface SerializerConstructor {
     preferredCase?: CaseStyle
@@ -112,6 +116,94 @@ export abstract class BaseSerializer<TResource = any> {
     protected abstract resolveCurrentRootKey (): string
     protected abstract applyMetaToBody (meta: MetaData, rootKey: string): void
     protected abstract getResourceForMeta (): TResource
+    protected abstract getSerializerType (): ResponseKind
+    protected abstract setBody (body: any): this
+
+    /**
+     * Apply registered plugins for the serialization process, allowing plugins to 
+     * modify the response body and metadata before the response is sent.
+     * 
+     * @param body 
+     * @returns 
+     */
+    protected applySerializePlugins<TBody> (body: TBody): TBody {
+        const beforeSerialize = runPluginHook('beforeSerialize', {
+            serializer: this,
+            serializerType: this.getSerializerType(),
+            resource: this.getResourceForMeta(),
+            body,
+        })
+
+        const afterSerialize = runPluginHook('afterSerialize', beforeSerialize)
+
+        return afterSerialize.body as TBody
+    }
+
+    /**
+     * Apply registered plugins for the response process, allowing plugins to modify the 
+     * response body, headers, and status before the response is sent.
+     * 
+     * @param input 
+     * @returns 
+     */
+    protected applyResponsePlugins<TBody, TRawResponse, TServerResponse> (input: {
+        body: TBody
+        rawResponse?: TRawResponse
+        response?: TServerResponse
+    }) {
+        const beforeResponse = runPluginHook('beforeResponse', {
+            serializer: this,
+            serializerType: this.getSerializerType(),
+            rawResponse: input.rawResponse,
+            response: input.response,
+            body: input.body,
+        })
+
+        this.setBody(beforeResponse.body)
+
+        if (typeof (input.response as any)?.setBody === 'function') {
+            (input.response as any).setBody(beforeResponse.body)
+        }
+
+        const afterResponse = runPluginHook('afterResponse', beforeResponse)
+
+        this.setBody(afterResponse.body)
+
+        if (typeof (input.response as any)?.setBody === 'function') {
+            (input.response as any).setBody(afterResponse.body)
+        }
+
+        return afterResponse.body as TBody
+    }
+
+    /**
+     * Resolve the raw response object from the provided response or the current 
+     * context, allowing plugins to access and modify the raw response before it is sent. 
+     * 
+     * @param response 
+     * @returns 
+     */
+    protected resolveRawResponse<TRawResponse> (response?: TRawResponse): TRawResponse | undefined {
+        if (typeof response !== 'undefined') {
+            return response
+        }
+
+        const runtimeCtx = getCtx() ?? (this.constructor as typeof BaseSerializer).ctx
+
+        return extractResponseFromCtx(runtimeCtx) as TRawResponse | undefined
+    }
+
+    /**
+     * Dispatch a body to a raw response object when it exposes a send() transport method.
+     *
+     * @param raw
+     * @param body
+     */
+    protected sendRawResponseBody<TBody> (raw: unknown, body: TBody): void {
+        if (raw && typeof (raw as any).send === 'function') {
+            (raw as any).send(body)
+        }
+    }
 
     /**
      * Add additional metadata to the response. If called without arguments.
@@ -190,6 +282,12 @@ export abstract class BaseSerializer<TResource = any> {
             (response as any).setBody(input.body())
         }
 
+        this.applyResponsePlugins({
+            body: input.body(),
+            rawResponse: input.rawResponse,
+            response,
+        })
+
         return response
     }
 
@@ -232,12 +330,18 @@ export abstract class BaseSerializer<TResource = any> {
             (response as any).setBody(resolvedBody)
         }
 
-        const resolved = Promise.resolve(resolvedBody).then(input.onfulfilled, input.onrejected)
+        const dispatchedBody = this.applyResponsePlugins({
+            body: resolvedBody,
+            rawResponse: input.rawResponse,
+            response,
+        })
+
+        const resolved = Promise.resolve(dispatchedBody).then(input.onfulfilled, input.onrejected)
 
         if (typeof (response as any)?.send === 'function') {
-            (response as any).send(resolvedBody)
+            (response as any).send(dispatchedBody)
         } else if (typeof input.rawResponse !== 'undefined' && input.sendRawResponse) {
-            input.sendRawResponse(input.rawResponse, resolvedBody)
+            input.sendRawResponse(input.rawResponse, dispatchedBody)
         }
 
         return resolved

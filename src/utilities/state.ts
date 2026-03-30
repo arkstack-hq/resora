@@ -1,4 +1,5 @@
 import { CaseStyle, Config, ResponseFactory, ResponseStructureConfig } from '../types'
+import { AsyncLocalStorage } from 'node:async_hooks'
 
 let globalPreferredCase: CaseStyle | undefined
 let globalResponseStructure: ResponseStructureConfig | undefined
@@ -259,6 +260,11 @@ export const getGlobalCursorMeta = (): Config['cursorMeta'] => {
 }
 
 let globalRequestUrl: string | undefined
+let globalCtx: unknown
+const requestContextStore = new AsyncLocalStorage<{
+    ctx: unknown
+    url?: string
+}>()
 
 /**
  * Sets the current request URL, used as a fallback for pagination link generation
@@ -276,7 +282,18 @@ export const setRequestUrl = (url: string | undefined): void => {
  * @returns The current request URL, or undefined if not set.
  */
 export const getRequestUrl = (): string | undefined => {
-    return globalRequestUrl
+    return requestContextStore.getStore()?.url ?? globalRequestUrl
+}
+
+export const runWithCtx = <T> (ctx: unknown, callback: () => T): T => {
+    return requestContextStore.run({
+        ctx,
+        url: extractRequestUrl(ctx),
+    }, callback)
+}
+
+export const getCtx = (): unknown => {
+    return requestContextStore.getStore()?.ctx ?? globalCtx
 }
 
 /**
@@ -371,5 +388,6 @@ export const extractResponseFromCtx = (ctx: unknown): any | undefined => {
  * @param ctx An HTTP context `{ req, res }`, Express Request, H3 HTTPEvent, or bare request.
  */
 export const setCtx = (ctx: unknown): void => {
+    globalCtx = ctx
     setRequestUrl(extractRequestUrl(ctx))
 }

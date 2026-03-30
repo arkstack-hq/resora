@@ -42,11 +42,13 @@ export default defineConfig({
           { text: 'Generating Resources', link: '/guide/generating-resources' },
           { text: 'Configuration', link: '/guide/configuration' },
           { text: 'Pagination & Cursor Recipes', link: '/guide/pagination-cursor-recipes' },
+          { text: 'Plugin System', link: '/guide/plugins' },
         ]
       },
       {
         text: 'API Reference',
         items: [
+          { text: 'Plugin System', link: '/api/plugins' },
           { text: 'Resource', link: '/api/resource' },
           { text: 'Resource Collection', link: '/api/resource-collection' },
           { text: 'Generic Resource', link: '/api/generic-resource' },

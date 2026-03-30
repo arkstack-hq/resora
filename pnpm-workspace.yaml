@@ -3,3 +3,4 @@ onlyBuiltDependencies:
 
 packages:
   - .
+  - packages/*
