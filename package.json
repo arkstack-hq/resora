@@ -56,7 +56,9 @@
     "prepublishOnly": "pnpm build && pnpm test",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:preview": "vitepress preview docs",
+    "version:packages": "pnpm -r --filter \"@resora/*\" version:patch && git add . && git commit -m \"chore: bump package versions\"",
+    "publish:packages": "pnpm version:packages && pnpm -r --filter \"@arkstack/*\" publish --access public"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

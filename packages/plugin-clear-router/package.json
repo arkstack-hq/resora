@@ -27,9 +27,11 @@
         "README.md"
     ],
     "scripts": {
-        "build": "pnpm tsdown",
-        "test": "pnpm vitest run tests/**/*.spec.ts",
-        "lint": "eslint src tests"
+        "test": "vitest run tests/**/*.spec.ts",
+        "build": "tsdown",
+        "lint": "eslint src tests --ext .ts",
+        "version:patch": "pnpm version patch",
+        "prepublishOnly": "pnpm build"
     },
     "dependencies": {
         "resora": "workspace:*"
