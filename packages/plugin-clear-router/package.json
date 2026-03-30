@@ -2,6 +2,9 @@
     "name": "@resora/plugin-clear-router",
     "version": "0.1.0",
     "description": "Opt-in bridge plugin for using resora return values inside clear-router handlers.",
+    "publishConfig": {
+        "access": "public"
+    },
     "keywords": [
         "resora",
         "clear-router",
@@ -31,7 +34,7 @@
         "build": "tsdown",
         "lint": "eslint src tests --ext .ts",
         "version:patch": "pnpm version patch",
-        "prepublishOnly": "pnpm build"
+        "prepublishOnly": "pnpm build && pnpm test"
     },
     "dependencies": {
         "resora": "workspace:*"
