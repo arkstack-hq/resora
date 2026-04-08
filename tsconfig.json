@@ -6,7 +6,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "strict": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "declaration": true,
     "sourceMap": true,
@@ -14,6 +14,7 @@
     "rootDir": "./",
     "types": ["node", "vitest", "express"],
     "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
     "paths": {
       "resora": ["src/index.ts"],
       "@resora/plugin-clear-router": [
