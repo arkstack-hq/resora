@@ -78,7 +78,7 @@ const resolveAndApply = (imported: any) => {
  * @returns 
  */
 const loadRuntimeConfigSync = (): boolean => {
-    const require = createRequire(import.meta.url)
+    const req = createRequire(import.meta.url)
     const syncConfigPaths = [
         path.join(process.cwd(), 'resora.config.cjs'),
     ]
@@ -89,7 +89,7 @@ const loadRuntimeConfigSync = (): boolean => {
         }
 
         try {
-            const imported = require(configPath)
+            const imported = req(configPath)
             resolveAndApply(imported)
 
             return true
