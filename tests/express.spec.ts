@@ -186,6 +186,112 @@ describe('Connect-style Requests (Express)', () => {
         })
     })
 
+    it('should serialize nested collection instances in express responses', async () => {
+        class FamilyMemberResource extends Resource {
+            data () {
+                return {
+                    id: this.id,
+                    fullName: `${this.firstName} ${this.lastName}`,
+                }
+            }
+        }
+
+        class FamilyMemberCollection<R extends { id: number; firstName: string; lastName: string }[]> extends ResourceCollection<R> {
+            collects = FamilyMemberResource
+
+            data () {
+                return this.toObject()
+            }
+        }
+
+        class FamilyOverviewResource extends Resource {
+            data () {
+                return {
+                    id: this.id,
+                    familyName: this.familyName,
+                    members: new FamilyMemberCollection(this.members ?? []),
+                }
+            }
+        }
+
+        app.get('/test', async (req, res) => {
+            return await new FamilyOverviewResource({
+                id: 1,
+                familyName: 'Smiths',
+                members: [
+                    { id: 1, firstName: 'Jane', lastName: 'Doe' },
+                    { id: 2, firstName: 'John', lastName: 'Doe' },
+                ],
+            }, res)
+        })
+
+        const response = await supertest(app).get('/test')
+
+        expect(response.body).toEqual({
+            data: {
+                id: 1,
+                familyName: 'Smiths',
+                members: [
+                    { id: 1, fullName: 'Jane Doe' },
+                    { id: 2, fullName: 'John Doe' },
+                ],
+            },
+        })
+    })
+
+    it('should serialize nested collection toObject output in express responses', async () => {
+        class FamilyMemberResource extends Resource {
+            data () {
+                return {
+                    id: this.id,
+                    fullName: `${this.firstName} ${this.lastName}`,
+                }
+            }
+        }
+
+        class FamilyMemberCollection<R extends { id: number; firstName: string; lastName: string }[]> extends ResourceCollection<R> {
+            collects = FamilyMemberResource
+
+            data () {
+                return this.toObject()
+            }
+        }
+
+        class FamilyOverviewResource extends Resource {
+            data () {
+                return {
+                    id: this.id,
+                    familyName: this.familyName,
+                    members: new FamilyMemberCollection(this.members ?? []).toObject(),
+                }
+            }
+        }
+
+        app.get('/test', async (req, res) => {
+            return await new FamilyOverviewResource({
+                id: 1,
+                familyName: 'Smiths',
+                members: [
+                    { id: 1, firstName: 'Jane', lastName: 'Doe' },
+                    { id: 2, firstName: 'John', lastName: 'Doe' },
+                ],
+            }, res).json()
+        })
+
+        const response = await supertest(app).get('/test')
+
+        expect(response.body).toEqual({
+            data: {
+                id: 1,
+                familyName: 'Smiths',
+                members: [
+                    { id: 1, fullName: 'Jane Doe' },
+                    { id: 2, fullName: 'John Doe' },
+                ],
+            },
+        })
+    })
+
     it('should allow class-level withResponse hook to customize headers/status/body', async () => {
         class CustomResource extends Resource {
             withResponse (response: ServerResponse) {
