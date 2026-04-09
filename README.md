@@ -160,6 +160,8 @@ class FamilyMemberCollection extends ResourceCollection {
 class FamilyOverviewResource extends Resource {
   data() {
     return {
+      id: this.id,
+      familyName: this.familyName,
       members: new FamilyMemberCollection(this.members ?? []),
     };
   }
@@ -171,6 +173,8 @@ Response:
 ```json
 {
   "data": {
+    "id": 1,
+    "familyName": "Smiths",
     "members": [
       {
         "id": 1,
@@ -206,8 +210,6 @@ This separation ensures:
 - Minimal abstraction cost
 - Strong typing as a first-class feature
 - Framework independence
-
----
 
 ## Framework Compatibility
 
@@ -255,8 +257,6 @@ class UserResource extends Resource {
 
 Falsy/null attributes are omitted from the final serialized payload.
 
----
-
 ## When to Use Resora
 
 Resora is a good fit if you:
@@ -268,16 +268,12 @@ Resora is a good fit if you:
 
 It is intentionally not opinionated about routing, validation, or persistence.
 
----
-
 ## Documentation
 
 - Getting Started: https://arkstack-hq.github.io/resora/guide/getting-started
 - Configuration: https://arkstack-hq.github.io/resora/guide/configuration
 - Conditional Rendering: https://arkstack-hq.github.io/resora/guide/conditional-attributes
 - Pagination & Cursor Recipes: https://arkstack-hq.github.io/resora/guide/pagination-cursor-recipes
-
----
 
 ## License
 

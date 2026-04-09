@@ -83,6 +83,8 @@ Collections can be nested inside a parent `Resource` in two supported ways.
 class FamilyOverviewResource extends Resource {
   data() {
     return {
+      id: this.id,
+      familyName: this.familyName,
       members: new UserCollection(this.members ?? []),
     };
   }
@@ -95,6 +97,8 @@ class FamilyOverviewResource extends Resource {
 class FamilyOverviewResource extends Resource {
   data() {
     return {
+      id: this.id,
+      familyName: this.familyName,
       members: new UserCollection(this.members ?? []).toObject(),
     };
   }

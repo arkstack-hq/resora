@@ -264,6 +264,8 @@ class FamilyMemberCollection extends ResourceCollection {
 class FamilyOverviewResource extends Resource {
   data() {
     return {
+      id: this.id,
+      familyName: this.familyName,
       members: new FamilyMemberCollection(this.members ?? []),
     };
   }
@@ -275,6 +277,8 @@ Result:
 ```json
 {
   "data": {
+    "id": 1,
+    "familyName": "Smiths",
     "members": [
       {
         "id": 1,
@@ -293,6 +297,8 @@ You can also flatten the nested collection explicitly:
 class FamilyOverviewResource extends Resource {
   data() {
     return {
+      id: this.id,
+      familyName: this.familyName,
       members: new FamilyMemberCollection(this.members ?? []).toObject(),
     };
   }
