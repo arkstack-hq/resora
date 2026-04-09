@@ -1,6 +1,6 @@
 {
   "name": "resora",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "A structured API response layer for Node.js and TypeScript with automatic JSON responses, collection support, and pagination handling.",
   "keywords": [
     "api",

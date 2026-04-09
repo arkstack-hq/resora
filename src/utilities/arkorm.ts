@@ -11,6 +11,13 @@ type ArkormLikeCollection = {
     all: () => unknown
 }
 
+type ResoraCollectionLike = {
+    toObject: () => unknown
+    getBody: () => unknown
+    json: () => unknown
+    setCollects: (...args: unknown[]) => unknown
+}
+
 /**
  * Type guard to check if a value is an Arkorm-like model, which is defined as an object 
  * that has a toObject method and optionally getRawAttributes, getAttribute, and 
@@ -47,6 +54,25 @@ export const isArkormLikeCollection = (value: unknown): value is ArkormLikeColle
 }
 
 /**
+ * Type guard to check if a value is a Resora collection-like serializer.
+ *
+ * @param value
+ * @returns
+ */
+export const isResoraCollectionLike = (value: unknown): value is ResoraCollectionLike => {
+    if (!value || typeof value !== 'object') {
+        return false
+    }
+
+    const candidate = value as Partial<ResoraCollectionLike>
+
+    return typeof candidate.toObject === 'function'
+        && typeof candidate.getBody === 'function'
+        && typeof candidate.json === 'function'
+        && typeof candidate.setCollects === 'function'
+}
+
+/**
  * Normalize a value for serialization by recursively converting Arkorm-like models and 
  * collections to plain objects, while preserving the structure of arrays and plain objects.
  * 
@@ -56,6 +82,10 @@ export const isArkormLikeCollection = (value: unknown): value is ArkormLikeColle
 export const normalizeSerializableData = (value: unknown): unknown => {
     if (Array.isArray(value)) {
         return value.map(item => normalizeSerializableData(item))
+    }
+
+    if (isResoraCollectionLike(value)) {
+        return normalizeSerializableData(value.toObject())
     }
 
     if (isArkormLikeModel(value)) {

@@ -94,11 +94,51 @@ export class ResourceCollection<
     }
   }
 
+  private getSourceData (): (
+    R extends Collectible
+    ? R['data'][number]
+    : R extends PaginatorLike<infer TPaginatorData>
+    ? TPaginatorData
+    : R extends CollectionLike<infer TCollectionData>
+    ? TCollectionData
+    : R extends ResourceData[]
+    ? R[number]
+    : never
+  )[] {
+    return (
+      Array.isArray(this.resource)
+        ? this.resource
+        : isArkormLikeCollection(this.resource)
+          ? this.resource.all()
+          : this.resource.data as never[]
+    ) as never
+  }
+
+  private resolveObjectData () {
+    let data = this.getSourceData() as ResourceData[]
+
+    if (this.collects) {
+      data = data.map((item: any) => new this.collects!(item).data())
+    }
+
+    return normalizeSerializableData(data) as (
+      R extends Collectible
+      ? R['data'][number]
+      : R extends PaginatorLike<infer TPaginatorData>
+      ? TPaginatorData
+      : R extends CollectionLike<infer TCollectionData>
+      ? TCollectionData
+      : R extends ResourceData[]
+      ? R[number]
+      : never
+    )[]
+  }
+
   /**
    * Get the original resource data
    */
   data () {
-    return this.toObject()
+    return this.getSourceData()
   }
 
   /**
@@ -203,7 +243,7 @@ export class ResourceCollection<
 
       let data: ResourceData[] = this.data() as never
 
-      if (this.collects) {
+      if (this.collects && this.data === ResourceCollection.prototype.data) {
         data = data.map((item: any) => new this.collects!(item).data())
       }
 
@@ -278,15 +318,8 @@ export class ResourceCollection<
     : never
   )[] {
     this.called.toObject = true
-    this.json()
 
-    const source = Array.isArray(this.resource)
-      ? this.resource
-      : isArkormLikeCollection(this.resource)
-        ? this.resource.all()
-        : this.resource.data as never[]
-
-    return normalizeSerializableData(source) as never
+    return this.resolveObjectData() as never
   }
 
   /**

@@ -156,6 +156,105 @@ describe('Extending Resources', () => {
 })
 
 describe('Extending Collections', () => {
+    it('should return collected items from toObject in extended collections', () => {
+        class FamilyMemberResource extends Resource {
+            data () {
+                return {
+                    id: this.id,
+                    fullName: `${this.firstName} ${this.lastName}`,
+                }
+            }
+        }
+
+        class FamilyMemberCollection<R extends ResourceData[]> extends ResourceCollection<R> {
+            collects = FamilyMemberResource
+
+            data () {
+                return this.toObject()
+            }
+        }
+
+        const members = [{ id: 1, firstName: 'Jane', lastName: 'Doe' }]
+
+        expect(new FamilyMemberCollection(members).toObject()).toEqual([
+            { id: 1, fullName: 'Jane Doe' },
+        ])
+    })
+
+    it('should serialize nested transformed collections returned from toObject', () => {
+        class FamilyMemberResource extends Resource {
+            data () {
+                return {
+                    id: this.id,
+                    fullName: `${this.firstName} ${this.lastName}`,
+                }
+            }
+        }
+
+        class FamilyMemberCollection<R extends ResourceData[]> extends ResourceCollection<R> {
+            collects = FamilyMemberResource
+
+            data () {
+                return this.toObject()
+            }
+        }
+
+        class FamilyOverviewResource extends Resource {
+            data () {
+                return {
+                    members: new FamilyMemberCollection(this.members ?? []).toObject(),
+                }
+            }
+        }
+
+        const resource = new FamilyOverviewResource({
+            members: [{ id: 1, firstName: 'Jane', lastName: 'Doe' }],
+        })
+
+        expect(resource.getBody()).toEqual({
+            data: {
+                members: [{ id: 1, fullName: 'Jane Doe' }],
+            },
+        })
+    })
+
+    it('should serialize nested collection instances without calling toObject', () => {
+        class FamilyMemberResource extends Resource {
+            data () {
+                return {
+                    id: this.id,
+                    fullName: `${this.firstName} ${this.lastName}`,
+                }
+            }
+        }
+
+        class FamilyMemberCollection<R extends ResourceData[]> extends ResourceCollection<R> {
+            collects = FamilyMemberResource
+
+            data () {
+                return this.toObject()
+            }
+        }
+
+        class FamilyOverviewResource extends Resource {
+            data () {
+                return {
+                    members: new FamilyMemberCollection(this.members ?? []),
+                }
+            }
+        }
+
+        const resource = new FamilyOverviewResource({
+            members: [{ id: 1, firstName: 'Jane', lastName: 'Doe' }],
+        })
+
+        expect(resource.getBody()).toEqual({
+            data: {
+                members: [{ id: 1, fullName: 'Jane Doe' }],
+            },
+        })
+    })
+
     it('should handle non paginated collections', () => {
         class CustomResource extends Resource {
             data () {
