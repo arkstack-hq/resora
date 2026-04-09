@@ -231,6 +231,82 @@ Inside extended classes:
 - `this.toObject()` returns original payload
 - Properties are proxied (`this.id`, `this.name`)
 
+## Nesting Resources and Collections
+
+You can compose resources just like any other transformation layer. A parent `Resource` may return:
+
+- another `Resource`
+- a `ResourceCollection`
+- the result of `.toObject()` from a nested resource or collection
+
+### Nested Collection Instance
+
+Returning a collection instance directly is supported and keeps the parent resource code concise:
+
+```ts
+class FamilyMemberResource extends Resource {
+  data() {
+    return {
+      id: this.id,
+      fullName: `${this.firstName} ${this.lastName}`,
+    };
+  }
+}
+
+class FamilyMemberCollection extends ResourceCollection {
+  collects = FamilyMemberResource;
+
+  data() {
+    return this.toObject();
+  }
+}
+
+class FamilyOverviewResource extends Resource {
+  data() {
+    return {
+      members: new FamilyMemberCollection(this.members ?? []),
+    };
+  }
+}
+```
+
+Result:
+
+```json
+{
+  "data": {
+    "members": [
+      {
+        "id": 1,
+        "fullName": "Jane Doe"
+      }
+    ]
+  }
+}
+```
+
+### Nested Transformed Array with `toObject()`
+
+You can also flatten the nested collection explicitly:
+
+```ts
+class FamilyOverviewResource extends Resource {
+  data() {
+    return {
+      members: new FamilyMemberCollection(this.members ?? []).toObject(),
+    };
+  }
+}
+```
+
+This produces the same output. Use this form when you want the transformed array value immediately for further composition inside `data()`.
+
+### When to Use Which
+
+- Return the collection instance when you want the clearest nested resource code.
+- Call `.toObject()` when you need the transformed array before returning it.
+- Use `collects` on the nested collection so each item is transformed by the intended resource class.
+
 ### Chaining Still Works
 
 Extended resources retain:

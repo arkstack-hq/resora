@@ -59,6 +59,50 @@ Produces:
 
 Each item is transformed using the `collects` resource.
 
+If your collection class follows the common pattern below, `toObject()` returns the transformed items produced by `collects`:
+
+```ts
+class UserCollection extends ResourceCollection {
+  collects = UserResource;
+
+  data() {
+    return this.toObject();
+  }
+}
+```
+
+That makes the collection safe to reuse inside another resource.
+
+## Nested Collection Composition
+
+Collections can be nested inside a parent `Resource` in two supported ways.
+
+### 1. Return the collection instance directly
+
+```ts
+class FamilyOverviewResource extends Resource {
+  data() {
+    return {
+      members: new UserCollection(this.members ?? []),
+    };
+  }
+}
+```
+
+### 2. Return the transformed items with `.toObject()`
+
+```ts
+class FamilyOverviewResource extends Resource {
+  data() {
+    return {
+      members: new UserCollection(this.members ?? []).toObject(),
+    };
+  }
+}
+```
+
+Both forms serialize nested items using the collection's `collects` resource. The direct collection form is shorter. The `.toObject()` form is useful when you need to inspect or merge the transformed array before returning it.
+
 ---
 
 ## Pagination Support

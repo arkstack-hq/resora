@@ -33,6 +33,7 @@ Resora introduces a dedicated **response transformation layer** that removes the
 - Explicit data-to-response transformation
 - Automatic JSON response dispatch
 - First-class collection support
+- Nested resource and collection composition
 - Built-in pagination metadata handling
 - Built-in cursor metadata handling
 - Conditional attribute helpers (`when`, `whenNotNull`, `mergeWhen`)
@@ -134,7 +135,53 @@ Response:
 }
 ```
 
----
+### Nested Resources and Collections
+
+```ts
+import { Resource, ResourceCollection } from 'resora';
+
+class FamilyMemberResource extends Resource {
+  data() {
+    return {
+      id: this.id,
+      fullName: `${this.firstName} ${this.lastName}`,
+    };
+  }
+}
+
+class FamilyMemberCollection extends ResourceCollection {
+  collects = FamilyMemberResource;
+
+  data() {
+    return this.toObject();
+  }
+}
+
+class FamilyOverviewResource extends Resource {
+  data() {
+    return {
+      members: new FamilyMemberCollection(this.members ?? []),
+    };
+  }
+}
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "members": [
+      {
+        "id": 1,
+        "fullName": "Jane Doe"
+      }
+    ]
+  }
+}
+```
+
+You can also call `.toObject()` explicitly when you want the transformed collection array immediately inside a parent resource.
 
 ## Architectural Positioning
 

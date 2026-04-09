@@ -35,6 +35,42 @@ class UserCollection extends ResourceCollection<User[]> {
 
 Each item will be transformed using `UserResource`.
 
+If your collection overrides `data()` to return `this.toObject()`, the returned array is the transformed output from `collects`, not the raw underlying items.
+
+```ts
+class UserCollection extends ResourceCollection<User[]> {
+  collects = UserResource;
+
+  data() {
+    return this.toObject();
+  }
+}
+```
+
+This is especially useful when nesting a collection inside another resource:
+
+```ts
+class TeamResource extends Resource {
+  data() {
+    return {
+      members: new UserCollection(this.members ?? []),
+    };
+  }
+}
+```
+
+Calling `.toObject()` explicitly is also supported:
+
+```ts
+class TeamResource extends Resource {
+  data() {
+    return {
+      members: new UserCollection(this.members ?? []).toObject(),
+    };
+  }
+}
+```
+
 ## Metadata Handling
 
 If the resource contains:
