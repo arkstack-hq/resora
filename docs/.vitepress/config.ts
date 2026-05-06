@@ -25,7 +25,8 @@ export default defineConfig({
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: 'Home', link: '/' },
-      { text: 'API', link: '/api/resource' }
+      { text: 'API', link: '/api/resource' },
+      { text: 'Plugins', link: '/plugins/clear-router' }
     ],
 
     sidebar: [
@@ -43,6 +44,12 @@ export default defineConfig({
           { text: 'Configuration', link: '/guide/configuration' },
           { text: 'Pagination & Cursor Recipes', link: '/guide/pagination-cursor-recipes' },
           { text: 'Plugin System', link: '/guide/plugins' },
+        ]
+      },
+      {
+        text: 'Plugins',
+        items: [
+          { text: 'Clear Router', link: '/plugins/clear-router' },
         ]
       },
       {

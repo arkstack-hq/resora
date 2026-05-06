@@ -240,6 +240,10 @@ Plugins can:
 - inject framework integrations without core changes
 - register reusable transformation utilities
 
+Available plugins:
+
+- [`@resora/plugin-clear-router`](https://arkstack-hq.github.io/resora/plugins/clear-router.md)
+
 ## Conditional Rendering Example
 
 ```ts

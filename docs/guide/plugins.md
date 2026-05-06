@@ -116,31 +116,11 @@ export const namingPlugin = definePlugin({
 
 Utilities can then be retrieved with `getUtility()`.
 
-## Framework Integration Example
+## Available Plugins
 
-The clear-router integration is a good example of what this system is for.
+List of first class Resora plugins.
 
-```ts
-import { registerPlugin } from 'resora';
-import { clearRouterExpressPlugin } from '@resora/plugin-clear-router';
-
-registerPlugin(clearRouterExpressPlugin);
-```
-
-After registration, controller actions and inline handlers can return Resora resources directly:
-
-```ts
-import { Controller, Router } from 'clear-router';
-import { Resource } from 'resora';
-
-class UserController extends Controller {
-  index() {
-    return new Resource({ id: 1, name: 'Ada' });
-  }
-}
-
-Router.get('/users', [UserController, 'index']);
-```
+- [Clear Router](../plugins/clear-router.md)
 
 ## Backward Compatibility
 
