@@ -5,7 +5,7 @@ import express, { Router as ExpressRouter } from 'express'
 import { Router as ClearRouter } from 'clear-router/express'
 import { Controller } from 'clear-router'
 import { clearRouterExpressPlugin } from '../src'
-import request from 'supertest'
+import request from 'parasito'
 
 describe('@resora/plugin-clear-router express', () => {
     let app: express.Application
@@ -94,7 +94,7 @@ describe('@resora/plugin-clear-router express', () => {
         const response = await request(app).get('/users/2')
 
         expect(response.status).toBe(202)
-        expect(response.headers['x-plugin']).toBe('1')
+        expect(response.header['x-plugin']).toBe('1')
         expect(response.body).toEqual({
             data: {
                 id: 2,

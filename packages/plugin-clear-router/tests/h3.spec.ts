@@ -1,10 +1,11 @@
 import { Resource, registerPlugin, resetPluginsForTests } from 'resora'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, it } from 'vitest'
 
 import { Router as ClearRouter } from 'clear-router/h3'
 import { Controller } from 'clear-router'
 import { H3 } from 'h3'
 import { clearRouterH3Plugin } from '../src'
+import request from 'parasito'
 
 describe('@resora/plugin-clear-router h3', () => {
     let app: H3
@@ -28,16 +29,15 @@ describe('@resora/plugin-clear-router h3', () => {
             return new Resource({ id: 1, name: 'Ada' })
         })
 
-        const router = ClearRouter.apply(app)
-        const response = await router.fetch(new Request('http://localhost/users/1'))
-
-        expect(response.status).toBe(200)
-        expect(await response.json()).toEqual({
-            data: {
-                id: 1,
-                name: 'Ada',
-            },
-        })
+        ClearRouter.apply(app)
+        await request(app).get('/users/1')
+            .expect(200)
+            .expect({
+                data: {
+                    id: 1,
+                    name: 'Ada',
+                },
+            })
     })
 
     it('supports controller actions and preserves withResponse mutations', async () => {
@@ -52,16 +52,16 @@ describe('@resora/plugin-clear-router h3', () => {
 
         ClearRouter.get('/users/2', [UserController, 'show'])
 
-        const router = ClearRouter.apply(app)
-        const response = await router.fetch(new Request('http://localhost/users/2'))
+        ClearRouter.apply(app)
 
-        expect(response.status).toBe(201)
-        expect(response.headers.get('X-Plugin')).toBe('1')
-        expect(await response.json()).toEqual({
-            data: {
-                id: 2,
-                name: 'Grace',
-            },
-        })
+        await request(app).get('/users/2')
+            .expect(201)
+            .expect('X-Plugin', '1')
+            .expect({
+                data: {
+                    id: 2,
+                    name: 'Grace',
+                },
+            })
     })
 })

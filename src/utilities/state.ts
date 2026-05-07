@@ -374,6 +374,11 @@ export const extractResponseFromCtx = (ctx: unknown): any | undefined => {
         return ctx
     }
 
+    // Koa-style context exposes header/status/body helpers directly.
+    if (typeof obj.set === 'function' && 'status' in obj && 'body' in obj) {
+        return ctx
+    }
+
     // Context with `res` property ({ req, res } from Express or H3)
     if (obj.res && typeof obj.res === 'object') {
         return obj.res

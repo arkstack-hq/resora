@@ -2,14 +2,21 @@ import { Router as ClearRouterExpress } from 'clear-router/express'
 import { Router as ClearRouterFastify } from 'clear-router/fastify'
 import { Router as ClearRouterH3 } from 'clear-router/h3'
 import { Router as ClearRouterHono } from 'clear-router/hono'
+import { Router as ClearRouterKoa } from 'clear-router/koa'
 import type { CoreRouter } from 'clear-router/core'
 import type { RouteHandler as ExpressRouteHandler } from 'clear-router/types/express'
 import type { RouteHandler as FastifyRouteHandler } from 'clear-router/types/fastify'
 import type { RouteHandler as H3RouteHandler } from 'clear-router/types/h3'
 import type { RouteHandler as HonoRouteHandler } from 'clear-router/types/hono'
+import type { RouteHandler as KoaRouteHandler } from 'clear-router/types/koa'
 import { definePlugin } from 'resora'
 
-type AnyRouteHandler = ExpressRouteHandler | FastifyRouteHandler | H3RouteHandler | HonoRouteHandler
+type AnyRouteHandler =
+    | ExpressRouteHandler
+    | FastifyRouteHandler
+    | H3RouteHandler
+    | HonoRouteHandler
+    | KoaRouteHandler
 type ResolveContext = (ctx: unknown) => unknown
 type ResolveResult = (ctx: unknown, result: unknown, resolved: unknown) => unknown
 
@@ -130,9 +137,21 @@ export const clearRouterHonoPlugin = definePlugin({
     },
 })
 
+/**
+ * Clear Router plugin for Koa framework. Patches Clear Router's Koa router to wrap
+ * route handlers with the active Koa context for resora response mutations.
+ */
+export const clearRouterKoaPlugin = definePlugin({
+    name: 'clear-router-koa',
+    setup: ({ runWithCtx }) => {
+        patchRouter(ClearRouterKoa as never, runWithCtx)
+    },
+})
+
 export const clearRouterPlugin = [
     clearRouterExpressPlugin,
     clearRouterFastifyPlugin,
     clearRouterH3Plugin,
     clearRouterHonoPlugin,
+    clearRouterKoaPlugin,
 ]

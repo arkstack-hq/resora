@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { ResourceCollection } from 'src'
 import express from 'express'
-import supertest from 'supertest'
+import supertest from 'parasito'
 
 let app: express.Application
 
@@ -84,7 +84,7 @@ describe('Connect-style Requests (Express)', () => {
         })
 
         const response = await supertest(app).get('/test')
-        expect(response.headers['x-custom-header']).toEqual('CustomValue')
+        expect(response.header['x-custom-header']).toEqual('CustomValue')
     })
 
     it('should allow setting cookies', async () => {
@@ -96,7 +96,7 @@ describe('Connect-style Requests (Express)', () => {
         })
 
         const response = await supertest(app).get('/test')
-        expect(response.headers['set-cookie'][0]).toContain('testCookie=testValue')
+        expect(response.header['set-cookie']).toContain('testCookie=testValue')
     })
 
     it('should allow setting status code', async () => {
@@ -314,7 +314,7 @@ describe('Connect-style Requests (Express)', () => {
 
         const response = await supertest(app).get('/test')
         expect(response.status).toEqual(202)
-        expect(response.headers['x-from-hook']).toEqual('1')
+        expect(response.header['x-from-hook']).toEqual('1')
         expect(response.body).toEqual({
             data: { id: 1, name: 'Test Resource' },
             meta: {
@@ -351,7 +351,7 @@ describe('Connect-style Requests (Express)', () => {
         })
 
         const response = await supertest(app).get('/test')
-        expect(response.headers['x-collection-hook']).toEqual('1')
+        expect(response.header['x-collection-hook']).toEqual('1')
         expect(response.body).toEqual({
             data: [{ id: 1, name: 'Test Resource' }],
             meta: {

@@ -133,6 +133,8 @@ export class ServerResponse<
             this.response.headers.set(key, value)
         } else if ('setHeader' in this.response) {
             this.response.setHeader(key, value)
+        } else if ('set' in this.response && typeof this.response.set === 'function') {
+            this.response.set(key, value)
         } else if ('header' in this.response && typeof this.response.header === 'function') {
             this.response.header(key, value)
         }
@@ -197,6 +199,11 @@ export class ServerResponse<
             ;(this.response as any).__resoraStatus = this._status
         } else if ('status' in this.response && typeof this.response.status !== 'function') {
             this.response.status = this._status
+        }
+
+        if ('body' in this.response) {
+            ;(this.response as any).body = this.body
+            ;(this.response as any).__resoraStatus = this._status
         }
 
         runPluginHook('afterSend', {

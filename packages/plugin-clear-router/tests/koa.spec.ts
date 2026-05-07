@@ -1,17 +1,20 @@
 import { Resource, registerPlugin, resetPluginsForTests } from 'resora'
 import { beforeEach, describe, expect, it } from 'vitest'
-import fastify, { FastifyInstance } from 'fastify'
 
-import { Router as ClearRouter } from 'clear-router/fastify'
+import Koa from 'koa'
+import KoaRouter from '@koa/router'
+import { Router as ClearRouter } from 'clear-router/koa'
 import { Controller } from 'clear-router'
-import { clearRouterFastifyPlugin } from '../src'
+import { clearRouterKoaPlugin } from '../src'
+import request from 'parasito'
 
-describe('@resora/plugin-clear-router fastify', () => {
-    let app: FastifyInstance
+describe('@resora/plugin-clear-router koa', () => {
+    let app: Koa
+    let router: KoaRouter
 
     beforeEach(() => {
         resetPluginsForTests()
-        registerPlugin(clearRouterFastifyPlugin)
+        registerPlugin(clearRouterKoaPlugin)
 
         ClearRouter.routes = []
         ClearRouter.prefix = ''
@@ -20,12 +23,14 @@ describe('@resora/plugin-clear-router fastify', () => {
         ClearRouter.routesByPathMethod = {}
         ClearRouter.routesByMethod = {}
 
-        app = fastify()
+        app = new Koa()
+        router = new KoaRouter()
     })
 
-    const setup = async () => {
-        ClearRouter.apply(app)
-        await app.ready()
+    const setup = () => {
+        ClearRouter.apply(router)
+        app.use(router.routes())
+        app.use(router.allowedMethods())
     }
 
     it('dispatches bare resora resources returned from inline handlers', async () => {
@@ -33,12 +38,12 @@ describe('@resora/plugin-clear-router fastify', () => {
             return new Resource({ id: 1, name: 'Ada' })
         })
 
-        await setup()
+        setup()
 
-        const response = await app.inject({ method: 'GET', url: '/users/1' })
+        const response = await request(app.callback()).get('/users/1')
 
-        expect(response.statusCode).toBe(200)
-        expect(response.json()).toEqual({
+        expect(response.status).toBe(200)
+        expect(response.body).toEqual({
             data: {
                 id: 1,
                 name: 'Ada',
@@ -63,13 +68,13 @@ describe('@resora/plugin-clear-router fastify', () => {
 
         ClearRouter.get('/users/2', [UserController, 'show'])
 
-        await setup()
+        setup()
 
-        const response = await app.inject({ method: 'GET', url: '/users/2' })
+        const response = await request(app.callback()).get('/users/2')
 
-        expect(response.statusCode).toBe(202)
+        expect(response.status).toBe(202)
         expect(response.header['x-plugin']).toBe('1')
-        expect(response.json()).toEqual({
+        expect(response.body).toEqual({
             data: {
                 id: 2,
                 name: 'Grace',
