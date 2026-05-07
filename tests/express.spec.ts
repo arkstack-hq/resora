@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { ResourceCollection } from 'src'
 import express from 'express'
-import supertest from 'parasito'
+import request from 'parasito'
 
 let app: express.Application
 
@@ -18,8 +18,7 @@ describe('Connect-style Requests (Express)', () => {
             return await new Resource(resource, res).json()
         })
 
-        const response = await supertest(app).get('/test')
-        expect(response.body).toEqual({ data: resource })
+        await request(app).get('/test').expect({ data: resource })
     })
 
     it('should can use response from the global context object', async () => {
@@ -32,9 +31,9 @@ describe('Connect-style Requests (Express)', () => {
                 .setStatusCode(202)
         })
 
-        const response = await supertest(app).get('/test')
-        expect(response.body).toEqual({ data: resource })
-        expect(response.status).toEqual(202)
+        await request(app).get('/test')
+            .expect(202)
+            .expect({ data: resource })
     })
 
     it('should can use the global response object', async () => {
@@ -47,9 +46,9 @@ describe('Connect-style Requests (Express)', () => {
                 .setStatusCode(202)
         })
 
-        const response = await supertest(app).get('/test')
-        expect(response.body).toEqual({ data: resource })
-        expect(response.status).toEqual(202)
+        await request(app).get('/test')
+            .expect(202)
+            .expect({ data: resource })
     })
 
     it('should allow chaining of methods', async () => {
@@ -58,11 +57,11 @@ describe('Connect-style Requests (Express)', () => {
             return await new Resource(resource, res).additional({ meta: 'test' })
         })
 
-        const response = await supertest(app).get('/test')
-        expect(response.body).toEqual({
-            data: resource,
-            meta: 'test',
-        })
+        await request(app).get('/test')
+            .expect({
+                data: resource,
+                meta: 'test',
+            })
     })
 
     it('should allow chaining with async/await', async () => {
@@ -71,8 +70,7 @@ describe('Connect-style Requests (Express)', () => {
             return await new Resource(resource, res).json()
         })
 
-        const response = await supertest(app).get('/test')
-        expect(response.body).toEqual({ data: resource })
+        await request(app).get('/test').expect({ data: resource })
     })
 
     it('should allow setting response headers', async () => {
@@ -83,8 +81,7 @@ describe('Connect-style Requests (Express)', () => {
                 .header('X-Custom-Header', 'CustomValue')
         })
 
-        const response = await supertest(app).get('/test')
-        expect(response.header['x-custom-header']).toEqual('CustomValue')
+        await request(app).get('/test').expect('x-custom-header', 'CustomValue')
     })
 
     it('should allow setting cookies', async () => {
@@ -95,8 +92,9 @@ describe('Connect-style Requests (Express)', () => {
                 .setCookie('testCookie', 'testValue', { path: '/', maxAge: 3600 })
         })
 
-        const response = await supertest(app).get('/test')
-        expect(response.header['set-cookie']).toContain('testCookie=testValue')
+        const res = await request(app).get('/test')
+
+        expect(res.headers.get('set-cookie')).toContain('testCookie=testValue;')
     })
 
     it('should allow setting status code', async () => {
@@ -107,7 +105,7 @@ describe('Connect-style Requests (Express)', () => {
                 .setStatusCode(201)
         })
 
-        const response = await supertest(app).get('/test')
+        const response = await request(app).get('/test')
         expect(response.status).toEqual(201)
     })
 
@@ -127,7 +125,7 @@ describe('Connect-style Requests (Express)', () => {
             return await new ResourceCollection(resource, res).json()
         })
 
-        const response = await supertest(app).get('/test')
+        const response = await request(app).get('/test')
         expect(response.body).toEqual({
             data: resource.data,
             links: {
@@ -150,7 +148,7 @@ describe('Connect-style Requests (Express)', () => {
             return await new Resource(resource, res).json()
         })
 
-        const response = await supertest(app).get('/test')
+        const response = await request(app).get('/test')
         expect(response.body).toEqual({ data: resource.data })
     })
 
@@ -170,7 +168,7 @@ describe('Connect-style Requests (Express)', () => {
             return await new ResourceCollection(resource, res).json()
         })
 
-        const response = await supertest(app).get('/test')
+        const response = await request(app).get('/test')
         expect(response.body).toEqual({
             data: resource.data,
             links: {
@@ -225,7 +223,7 @@ describe('Connect-style Requests (Express)', () => {
             }, res)
         })
 
-        const response = await supertest(app).get('/test')
+        const response = await request(app).get('/test')
 
         expect(response.body).toEqual({
             data: {
@@ -278,7 +276,7 @@ describe('Connect-style Requests (Express)', () => {
             }, res).json()
         })
 
-        const response = await supertest(app).get('/test')
+        const response = await request(app).get('/test')
 
         expect(response.body).toEqual({
             data: {
@@ -312,7 +310,7 @@ describe('Connect-style Requests (Express)', () => {
             return await new CustomResource({ id: 1, name: 'Test Resource' }, res).json()
         })
 
-        const response = await supertest(app).get('/test')
+        const response = await request(app).get('/test')
         expect(response.status).toEqual(202)
         expect(response.header['x-from-hook']).toEqual('1')
         expect(response.body).toEqual({
@@ -350,7 +348,7 @@ describe('Connect-style Requests (Express)', () => {
             }, res).json()
         })
 
-        const response = await supertest(app).get('/test')
+        const response = await request(app).get('/test')
         expect(response.header['x-collection-hook']).toEqual('1')
         expect(response.body).toEqual({
             data: [{ id: 1, name: 'Test Resource' }],

@@ -1,10 +1,11 @@
 import { Resource, registerPlugin, resetPluginsForTests } from 'resora'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, it } from 'vitest'
 import fastify, { FastifyInstance } from 'fastify'
 
 import { Router as ClearRouter } from 'clear-router/fastify'
 import { Controller } from 'clear-router'
 import { clearRouterFastifyPlugin } from '../src'
+import request from 'parasito'
 
 describe('@resora/plugin-clear-router fastify', () => {
     let app: FastifyInstance
@@ -35,15 +36,14 @@ describe('@resora/plugin-clear-router fastify', () => {
 
         await setup()
 
-        const response = await app.inject({ method: 'GET', url: '/users/1' })
-
-        expect(response.statusCode).toBe(200)
-        expect(response.json()).toEqual({
-            data: {
-                id: 1,
-                name: 'Ada',
-            },
-        })
+        await request(app).get('/users/1')
+            .expect(200)
+            .expect({
+                data: {
+                    id: 1,
+                    name: 'Ada',
+                },
+            })
     })
 
     it('supports controller actions and preserves withResponse mutations', async () => {
@@ -65,15 +65,14 @@ describe('@resora/plugin-clear-router fastify', () => {
 
         await setup()
 
-        const response = await app.inject({ method: 'GET', url: '/users/2' })
-
-        expect(response.statusCode).toBe(202)
-        expect(response.header['x-plugin']).toBe('1')
-        expect(response.json()).toEqual({
-            data: {
-                id: 2,
-                name: 'Grace',
-            },
-        })
+        await request(app).get('/users/2')
+            .expect(202)
+            .expect('x-plugin', '1')
+            .expect({
+                data: {
+                    id: 2,
+                    name: 'Grace',
+                },
+            })
     })
 })
