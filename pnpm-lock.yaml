@@ -86,8 +86,8 @@ importers:
         specifier: ^12.0.5
         version: 12.0.5
       clear-router:
-        specifier: ^2.5.8
-        version: 2.5.8(@koa/router@15.5.0(koa@3.2.0))(express@5.2.1)(fastify@5.8.5)(h3@2.0.1-rc.14)(hono@4.12.18)(koa@3.2.0)
+        specifier: ^2.6.0
+        version: 2.6.0(@koa/router@15.5.0(koa@3.2.0))(express@5.2.1)(fastify@5.8.5)(h3@2.0.1-rc.14)(hono@4.12.18)(koa@3.2.0)
       fastify:
         specifier: ^5.8.5
         version: 5.8.5
@@ -1396,8 +1396,8 @@ packages:
   chardet@2.1.1:
     resolution: {integrity: sha512-PsezH1rqdV9VvyNhxxOW32/d75r01NY7TQCmOqomRo15ZSOKbpTFVsfjghxo6JloQUCGnH4k1LGu0R4yCLlWQQ==}
 
-  clear-router@2.5.8:
-    resolution: {integrity: sha512-vxDP7/ziGxgxdQTDzGfRcZTWEBkJKc7Lgk6qOWh0ZeSA7CqwQxBrz60ZorRfyJWRtnm7eHvkLDYs36ZVRVr5ug==}
+  clear-router@2.6.0:
+    resolution: {integrity: sha512-5JrCRvOpB7reBiDHFxy3VpWlSTDRPDDB3XE9YjZ7CRfwqryZuyKMvFrti4+ZJXhySx3kZdHbkMTdZSOs6B6Esg==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
       '@koa/router': ^15.0.0
@@ -4348,7 +4348,7 @@ snapshots:
 
   chardet@2.1.1: {}
 
-  clear-router@2.5.8(@koa/router@15.5.0(koa@3.2.0))(express@5.2.1)(fastify@5.8.5)(h3@2.0.1-rc.14)(hono@4.12.18)(koa@3.2.0):
+  clear-router@2.6.0(@koa/router@15.5.0(koa@3.2.0))(express@5.2.1)(fastify@5.8.5)(h3@2.0.1-rc.14)(hono@4.12.18)(koa@3.2.0):
     optionalDependencies:
       '@koa/router': 15.5.0(koa@3.2.0)
       express: 5.2.1
