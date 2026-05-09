@@ -76,6 +76,7 @@
     "tsx": "^4.21.0",
     "typescript": "^5.3.3",
     "typescript-eslint": "^8.56.0",
+    "unrun": "^0.3.0",
     "vite-tsconfig-paths": "^6.1.1",
     "vitepress": "^2.0.0-alpha.17",
     "vitest": "^4.0.18",
