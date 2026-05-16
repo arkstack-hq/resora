@@ -2,10 +2,10 @@
 
 [![NPM Downloads](https://img.shields.io/npm/dt/resora.svg)](https://www.npmjs.com/package/resora)
 [![npm version](https://img.shields.io/npm/v/resora.svg)](https://www.npmjs.com/package/resora)
-[![License](https://img.shields.io/npm/l/resora.svg)](https://github.com/arkstack-hq/resora/blob/main/LICENSE)
-[![CI](https://github.com/arkstack-hq/resora/actions/workflows/ci.yml/badge.svg)](https://github.com/arkstack-hq/resora/actions/workflows/ci.yml)
-[![Deploy Docs](https://github.com/arkstack-hq/resora/actions/workflows/deploy-docs.yml/badge.svg)](https://github.com/arkstack-hq/resora/actions/workflows/deploy-docs.yml)
-[![codecov](https://codecov.io/gh/arkstack-hq/resora/graph/badge.svg?token=IBgFGJCoOr)](https://codecov.io/gh/arkstack-hq/resora)
+[![License](https://img.shields.io/npm/l/resora.svg)](https://github.com/arkstack-tmp/resora/blob/main/LICENSE)
+[![CI](https://github.com/arkstack-tmp/resora/actions/workflows/ci.yml/badge.svg)](https://github.com/arkstack-tmp/resora/actions/workflows/ci.yml)
+[![Deploy Docs](https://github.com/arkstack-tmp/resora/actions/workflows/deploy-docs.yml/badge.svg)](https://github.com/arkstack-tmp/resora/actions/workflows/deploy-docs.yml)
+[![codecov](https://codecov.io/gh/arkstack-tmp/resora/graph/badge.svg?token=IBgFGJCoOr)](https://codecov.io/gh/arkstack-tmp/resora)
 
 Resora is a structured API response layer for Node.js and TypeScript backends.
 
@@ -242,7 +242,7 @@ Plugins can:
 
 Available plugins:
 
-- [`@resora/plugin-clear-router`](https://arkstack-hq.github.io/resora/plugins/clear-router.md)
+- [`@resora/plugin-clear-router`](https://arkstack-tmp.github.io/resora/plugins/clear-router.md)
 
 ## Conditional Rendering Example
 
@@ -274,10 +274,10 @@ It is intentionally not opinionated about routing, validation, or persistence.
 
 ## Documentation
 
-- Getting Started: https://arkstack-hq.github.io/resora/guide/getting-started
-- Configuration: https://arkstack-hq.github.io/resora/guide/configuration
-- Conditional Rendering: https://arkstack-hq.github.io/resora/guide/conditional-attributes
-- Pagination & Cursor Recipes: https://arkstack-hq.github.io/resora/guide/pagination-cursor-recipes
+- Getting Started: https://arkstack-tmp.github.io/resora/guide/getting-started
+- Configuration: https://arkstack-tmp.github.io/resora/guide/configuration
+- Conditional Rendering: https://arkstack-tmp.github.io/resora/guide/conditional-attributes
+- Pagination & Cursor Recipes: https://arkstack-tmp.github.io/resora/guide/pagination-cursor-recipes
 
 ## License
 

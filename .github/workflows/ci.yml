@@ -51,4 +51,4 @@ jobs:
         with:
           directory: ./coverage
           token: ${{ secrets.CODECOV_TOKEN }}
-          slug: arkstack-hq/resora
+          slug: arkstack-tmp/resora
