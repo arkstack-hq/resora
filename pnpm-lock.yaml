@@ -76,7 +76,7 @@ importers:
   packages/plugin-clear-router:
     dependencies:
       resora:
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../..
     devDependencies:
       '@koa/router':
