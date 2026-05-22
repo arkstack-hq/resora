@@ -127,7 +127,7 @@ export class GenericResource<
   /**
    * Get the original resource data
    */
-  data (): R {
+  data (_ctx?: unknown): R {
     return this.resource
   }
 
@@ -223,12 +223,13 @@ export class GenericResource<
     if (!this.called.json) {
       this.called.json = true
 
-      const resource = this.data()
+      const ctx = this.resolveSerializationContext()
+      const resource = this.data(ctx)
 
       let data: any = normalizeSerializableData(resource)
 
       if (Array.isArray(data) && this.collects) {
-        data = data.map(item => new this.collects!(item).data())
+        data = data.map(item => new this.collects!(item).data(ctx))
       }
 
       if (!Array.isArray(data) && data && typeof data.data !== 'undefined') {

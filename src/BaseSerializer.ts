@@ -194,6 +194,13 @@ export abstract class BaseSerializer<TResource = any> {
     }
 
     /**
+     * Resolve the active request context for data transformation hooks.
+     */
+    protected resolveSerializationContext (): unknown {
+        return getCtx() ?? (this.constructor as typeof BaseSerializer).ctx
+    }
+
+    /**
      * Dispatch a body to a raw response object when it exposes a send() transport method.
      *
      * @param raw

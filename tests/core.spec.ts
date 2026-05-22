@@ -63,6 +63,56 @@ describe('Core', () => {
         expect(response).toEqual({ data: resource })
     })
 
+    it('should pass constructor context to the data method during serialization', () => {
+        class CustomResource extends Resource {
+            data ({ req }: any) {
+                return {
+                    id: this.id,
+                    publicData: req.publicData,
+                }
+            }
+        }
+
+        const ctx = {
+            req: { publicData: 'visible' },
+            res: {},
+        }
+
+        expect(new CustomResource({ id: 1 }, ctx).getBody()).toEqual({
+            data: {
+                id: 1,
+                publicData: 'visible',
+            },
+        })
+    })
+
+    it('should pass global context to the data method during serialization', () => {
+        class CustomResource extends Resource {
+            data ({ req }: any) {
+                return {
+                    id: this.id,
+                    publicData: req.publicData,
+                }
+            }
+        }
+
+        try {
+            Resource.setCtx({
+                req: { publicData: 'global' },
+                res: {},
+            })
+
+            expect(new CustomResource({ id: 1 }).getBody()).toEqual({
+                data: {
+                    id: 1,
+                    publicData: 'global',
+                },
+            })
+        } finally {
+            Resource.setCtx(undefined)
+        }
+    })
+
     it('should allow class-level withResponse to mutate final body before dispatch', async () => {
         class CustomResource extends Resource {
             withResponse () {
@@ -152,6 +202,31 @@ describe('Extending Resources', () => {
         expect(collection.getBody()).toEqual({ data: [{ id: 1, name: 'Test Resource', custom: 'data' }] })
         expect(collection).toBeInstanceOf(ResourceCollection)
         expect(collection.data()).toEqual(resource)
+    })
+
+    it('should pass collection context to collected resource data methods', () => {
+        class CustomResource extends Resource {
+            data ({ req }: any) {
+                return {
+                    id: this.id,
+                    publicData: req.publicData,
+                }
+            }
+        }
+
+        const ctx = {
+            req: { publicData: 'collection' },
+            res: {},
+        }
+
+        expect(new ResourceCollection([{ id: 1 }], ctx)
+            .setCollects(CustomResource)
+            .getBody()).toEqual({
+                data: [{
+                    id: 1,
+                    publicData: 'collection',
+                }],
+            })
     })
 })
 

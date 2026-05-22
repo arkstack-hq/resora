@@ -115,7 +115,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
   /**
    * Get the original resource data
    */
-  data () {
+  data (_ctx?: unknown) {
     return this.toObject()
   }
 
@@ -177,7 +177,8 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
     if (!this.called.json) {
       this.called.json = true
 
-      const resource = this.data()
+      const ctx = this.resolveSerializationContext()
+      const resource = this.data(ctx)
 
       let data: any = normalizeSerializableData(resource)
 

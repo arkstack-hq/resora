@@ -114,11 +114,11 @@ export class ResourceCollection<
     ) as never
   }
 
-  private resolveObjectData () {
+  private resolveObjectData (ctx?: unknown) {
     let data = this.getSourceData() as ResourceData[]
 
     if (this.collects) {
-      data = data.map((item: any) => new this.collects!(item).data())
+      data = data.map((item: any) => new this.collects!(item).data(ctx))
     }
 
     return normalizeSerializableData(data) as (
@@ -137,7 +137,7 @@ export class ResourceCollection<
   /**
    * Get the original resource data
    */
-  data () {
+  data (_ctx?: unknown) {
     return this.getSourceData()
   }
 
@@ -241,10 +241,11 @@ export class ResourceCollection<
     if (!this.called.json) {
       this.called.json = true
 
-      let data: ResourceData[] = this.data() as never
+      const ctx = this.resolveSerializationContext()
+      let data: ResourceData[] = this.data(ctx) as never
 
       if (this.collects && this.data === ResourceCollection.prototype.data) {
-        data = data.map((item: any) => new this.collects!(item).data())
+        data = data.map((item: any) => new this.collects!(item).data(ctx))
       }
 
       data = normalizeSerializableData(data) as ResourceData[]
@@ -319,7 +320,7 @@ export class ResourceCollection<
   )[] {
     this.called.toObject = true
 
-    return this.resolveObjectData() as never
+    return this.resolveObjectData(this.resolveSerializationContext()) as never
   }
 
   /**
