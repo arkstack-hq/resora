@@ -24,6 +24,7 @@ import {
   isArkormLikeCollection,
   isArkormLikeModel,
   normalizeSerializableData,
+  normalizeSerializableDataAsync,
   sanitizeConditionalAttributes,
   setRequestUrl,
   transformKeys,
@@ -283,6 +284,72 @@ export class GenericResource<
     serialize(data)
   }
 
+  private async serializeGenericResourceAsync (resource: unknown, ctx: unknown) {
+    let data: any = await normalizeSerializableDataAsync(resource)
+
+    const serialize = (resolvedData: any) => {
+      data = resolvedData
+
+      if (!Array.isArray(data) && data && typeof data.data !== 'undefined') {
+        data = data.data
+      }
+
+      data = sanitizeConditionalAttributes(data)
+
+      const paginationExtras = buildPaginationExtras(this.resource)
+      const { metaKey } = getPaginationExtraKeys()
+      const configuredMeta = metaKey ? paginationExtras[metaKey] : undefined
+      if (metaKey) {
+        delete paginationExtras[metaKey]
+      }
+
+      // Apply case transformation if configured
+      const caseStyle = this.resolveSerializerCaseStyle(
+        this.constructor as typeof GenericResource,
+        this.resolveCollectsConfig()
+      )
+      if (caseStyle) {
+        const transformer = getCaseTransformer(caseStyle)
+        data = transformKeys(data, transformer)
+      }
+
+      const customMeta = this.resolveMergedMeta(GenericResource.prototype.with)
+
+      const { wrap, rootKey, factory } = this.resolveResponseStructure()
+      this.body = buildResponseEnvelope({
+        payload: data,
+        meta: configuredMeta,
+        metaKey,
+        wrap,
+        rootKey,
+        factory,
+        context: {
+          type: 'generic',
+          resource: this.resource,
+        },
+      }) as GenericBody<R>
+
+      this.body = appendRootProperties(
+        this.body,
+        {
+          ...paginationExtras,
+          ...(customMeta || {}),
+        },
+        rootKey
+      ) as GenericBody<R>
+      this.body = this.applySerializePlugins(this.body) as GenericBody<R>
+    }
+
+    if (Array.isArray(data) && this.collects) {
+      const collected = data.map(item => new this.collects!(item).data(ctx))
+
+      data = await Promise.all(collected)
+      data = await normalizeSerializableDataAsync(data)
+    }
+
+    serialize(data)
+  }
+
   /**
    * Convert resource to JSON response format
    * 
@@ -297,11 +364,7 @@ export class GenericResource<
 
       if (this.isPromiseLike(resource)) {
         this.serializationPromise = Promise.resolve(resource).then(resolved => {
-          const result = this.serializeGenericResource(resolved, ctx)
-
-          if (this.isPromiseLike(result)) {
-            return result
-          }
+          return this.serializeGenericResourceAsync(resolved, ctx)
         })
       } else {
         const result = this.serializeGenericResource(resource, ctx)

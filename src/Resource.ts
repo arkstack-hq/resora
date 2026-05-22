@@ -20,6 +20,7 @@ import {
   getCaseTransformer,
   isArkormLikeModel,
   normalizeSerializableData,
+  normalizeSerializableDataAsync,
   sanitizeConditionalAttributes,
   setRequestUrl,
   transformKeys,
@@ -202,6 +203,40 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
     this.body = this.applySerializePlugins(this.body) as ResourceBody<R>
   }
 
+  private async serializeResourceAsync (resource: unknown) {
+    let data: any = await normalizeSerializableDataAsync(resource)
+
+    if (!Array.isArray(data) && data && typeof data.data !== 'undefined') {
+      data = data.data
+    }
+
+    data = sanitizeConditionalAttributes(data)
+
+    // Apply case transformation if configured
+    const caseStyle = this.resolveSerializerCaseStyle(this.constructor as typeof Resource)
+    if (caseStyle) {
+      const transformer = getCaseTransformer(caseStyle)
+      data = transformKeys(data, transformer)
+    }
+
+    const customMeta = this.resolveMergedMeta(Resource.prototype.with)
+
+    const { wrap, rootKey, factory } = this.resolveResponseStructure()
+    this.body = buildResponseEnvelope({
+      payload: data,
+      wrap,
+      rootKey,
+      factory,
+      context: {
+        type: 'resource',
+        resource: this.resource,
+      },
+    }) as ResourceBody<R>
+
+    this.body = appendRootProperties(this.body, customMeta, rootKey) as ResourceBody<R>
+    this.body = this.applySerializePlugins(this.body) as ResourceBody<R>
+  }
+
   /**
    * Convert resource to JSON response format
    * 
@@ -216,7 +251,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
 
       if (this.isPromiseLike(resource)) {
         this.serializationPromise = Promise.resolve(resource).then(resolved => {
-          this.serializeResource(resolved)
+          return this.serializeResourceAsync(resolved)
         })
       } else {
         this.serializeResource(resource)

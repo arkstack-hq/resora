@@ -22,6 +22,7 @@ import {
   getPaginationExtraKeys,
   isArkormLikeCollection,
   normalizeSerializableData,
+  normalizeSerializableDataAsync,
   sanitizeConditionalAttributes,
   setRequestUrl,
   transformKeys,
@@ -284,6 +285,58 @@ export class ResourceCollection<
     this.body = this.applySerializePlugins(this.body) as CollectionBody<R>
   }
 
+  private async serializeCollectionDataAsync (items: ResourceData[]) {
+    let data = await normalizeSerializableDataAsync(items) as ResourceData[]
+
+    data = sanitizeConditionalAttributes(data) as ResourceData[]
+
+    const paginationExtras = !Array.isArray(this.resource)
+      ? buildPaginationExtras(this.resource)
+      : {}
+
+    const { metaKey } = getPaginationExtraKeys()
+    const configuredMeta = metaKey ? paginationExtras[metaKey] : undefined
+    if (metaKey) {
+      delete paginationExtras[metaKey]
+    }
+
+    // Apply case transformation if configured
+    const caseStyle = this.resolveSerializerCaseStyle(
+      this.constructor as typeof ResourceCollection,
+      this.resolveCollectsConfig()
+    )
+    if (caseStyle) {
+      const transformer = getCaseTransformer(caseStyle)
+      data = transformKeys(data, transformer) as CollectionBody<R>['data']
+    }
+
+    const customMeta = this.resolveMergedMeta(ResourceCollection.prototype.with)
+
+    const { wrap, rootKey, factory } = this.resolveResponseStructure()
+    this.body = buildResponseEnvelope({
+      payload: data,
+      meta: configuredMeta,
+      metaKey,
+      wrap,
+      rootKey,
+      factory,
+      context: {
+        type: 'collection',
+        resource: this.resource,
+      },
+    }) as CollectionBody<R>
+
+    this.body = appendRootProperties(
+      this.body,
+      {
+        ...paginationExtras,
+        ...(customMeta || {}),
+      },
+      rootKey
+    ) as CollectionBody<R>
+    this.body = this.applySerializePlugins(this.body) as CollectionBody<R>
+  }
+
   private resolveCollectionDataForSerialization (items: ResourceData[], ctx: unknown): ResourceData[] | Promise<ResourceData[]> {
     if (this.collects && this.data === ResourceCollection.prototype.data) {
       const collected = items.map((item: any) => new this.collects!(item).data(ctx)) as Array<ResourceData | PromiseLike<ResourceData>>
@@ -315,7 +368,7 @@ export class ResourceCollection<
 
         if (this.isPromiseLike<ResourceData[]>(resolvedData)) {
           return resolvedData.then(resolved => {
-            this.serializeCollectionData(resolved)
+            return this.serializeCollectionDataAsync(resolved)
           })
         }
 
@@ -323,7 +376,13 @@ export class ResourceCollection<
       }
 
       if (this.isPromiseLike<ResourceData[]>(data)) {
-        this.serializationPromise = Promise.resolve(data).then(serialize)
+        this.serializationPromise = Promise.resolve(data).then(items => {
+          const resolvedData = this.resolveCollectionDataForSerialization(items, ctx)
+
+          return Promise.resolve(resolvedData).then(resolved => {
+            return this.serializeCollectionDataAsync(resolved)
+          })
+        })
       } else {
         const result = serialize(data)
         if (this.isPromiseLike(result)) {

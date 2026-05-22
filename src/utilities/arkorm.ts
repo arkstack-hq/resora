@@ -1,7 +1,7 @@
 import { isPlainObject } from './objects'
 
 type ArkormLikeModel = {
-    toObject: () => Record<string, any>
+    toObject: () => Record<string, any> | PromiseLike<Record<string, any>>
     getRawAttributes?: () => Record<string, any>
     getAttribute?: (key: string) => unknown
     setAttribute?: (key: string, value: unknown) => unknown
@@ -111,4 +111,55 @@ export const normalizeSerializableData = (value: unknown): unknown => {
     }
 
     return value
+}
+
+const isPromiseLike = <T = any> (value: unknown): value is PromiseLike<T> => {
+    return !!value
+        && (typeof value === 'object' || typeof value === 'function')
+        && typeof (value as PromiseLike<T>).then === 'function'
+}
+
+/**
+ * Async variant of normalizeSerializableData. It resolves promise-like values at
+ * every nesting level before converting Arkorm-like models and collections.
+ *
+ * @param value The value to normalize
+ * @returns The normalized value, ready for serialization
+ */
+export const normalizeSerializableDataAsync = async (value: unknown): Promise<unknown> => {
+    const resolvedValue = isPromiseLike(value)
+        ? await value
+        : value
+
+    if (Array.isArray(resolvedValue)) {
+        return Promise.all(resolvedValue.map(item => normalizeSerializableDataAsync(item)))
+    }
+
+    if (isResoraCollectionLike(resolvedValue)) {
+        return normalizeSerializableDataAsync(resolvedValue.toObject())
+    }
+
+    if (isArkormLikeModel(resolvedValue)) {
+        return normalizeSerializableDataAsync(resolvedValue.toObject())
+    }
+
+    if (isArkormLikeCollection(resolvedValue)) {
+        return normalizeSerializableDataAsync(resolvedValue.all())
+    }
+
+    if (isPlainObject(resolvedValue)) {
+        const entries = await Promise.all(
+            Object.entries(resolvedValue).map(async ([key, nestedValue]) => {
+                return [key, await normalizeSerializableDataAsync(nestedValue)] as const
+            })
+        )
+
+        return entries.reduce<Record<string, any>>((accumulator, [key, nestedValue]) => {
+            accumulator[key] = nestedValue
+
+            return accumulator
+        }, {})
+    }
+
+    return resolvedValue
 }

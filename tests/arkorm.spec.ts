@@ -5,6 +5,21 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 class TestArkormModel extends Model<Record<string, unknown>> {
 }
 
+class AsyncArkormModel {
+    constructor(private attributes: Record<string, unknown>) {
+    }
+
+    getRawAttributes () {
+        return this.attributes
+    }
+
+    async toObject () {
+        await Promise.resolve()
+
+        return this.attributes
+    }
+}
+
 class UserModel extends Model<{ id: number, name: string }> {
 }
 
@@ -108,13 +123,53 @@ describe('Arkorm integration', () => {
         })
     })
 
+    it('serializes Arkorm-like models returned from async data methods', async () => {
+        class AsyncResource extends Resource {
+            async data () {
+                await Promise.resolve()
+
+                return [
+                    new TestArkormModel({ id: 1, name: 'A' }),
+                    new TestArkormModel({ id: 2, name: 'B' }),
+                ]
+            }
+        }
+
+        await expect(new AsyncResource({}).json()).resolves.toEqual({
+            data: [
+                { id: 1, name: 'A' },
+                { id: 2, name: 'B' },
+            ],
+        })
+    })
+
+    it('awaits async Arkorm-like model conversion from async data methods', async () => {
+        class AsyncResource extends Resource {
+            async data () {
+                await Promise.resolve()
+
+                return [
+                    new AsyncArkormModel({ id: 1, name: 'A' }),
+                    new AsyncArkormModel({ id: 2, name: 'B' }),
+                ]
+            }
+        }
+
+        await expect(new AsyncResource({}).json()).resolves.toEqual({
+            data: [
+                { id: 1, name: 'A' },
+                { id: 2, name: 'B' },
+            ],
+        })
+    })
+
     it('serializes LengthAwarePaginator in ResourceCollection', () => {
         const models = new ArkormCollection([
             new TestArkormModel({ id: 1, name: 'A' }),
             new TestArkormModel({ id: 2, name: 'B' }),
         ])
 
-        const paginator = new LengthAwarePaginator(models, 10, 2, 2, { path: '/users' })
+        const paginator = new LengthAwarePaginator(models as never, 10, 2, 2, { path: '/users' })
         const collection = new ResourceCollection(paginator)
 
         expect(collection.getBody()).toEqual({
