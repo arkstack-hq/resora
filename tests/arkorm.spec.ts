@@ -30,7 +30,7 @@ describe('Arkorm integration', () => {
             paginate: (pp: number) => new LengthAwarePaginator<UserModel>([
                 new UserModel({ id: 1, name: 'Jane' }),
                 new UserModel({ id: 2, name: 'John' }),
-            ], 2, pp, 1, { path: '/users' }),
+            ] as never, 2, pp, 1, { path: '/users' }),
         } as never)
     })
 
@@ -114,7 +114,7 @@ describe('Arkorm integration', () => {
             new TestArkormModel({ id: 2, name: 'B' }),
         ])
 
-        const paginator = new LengthAwarePaginator(models, 10, 2, 2, { path: '/users' })
+        const paginator = new LengthAwarePaginator(models as never, 10, 2, 2, { path: '/users' })
         const collection = new ResourceCollection(paginator)
 
         expect(collection.getBody()).toEqual({
@@ -153,7 +153,7 @@ describe('Arkorm integration', () => {
         ])
 
         const paginator = new LengthAwarePaginator<UserModel>(
-            models,
+            models as never,
             10,
             2,
             1,
@@ -175,7 +175,7 @@ describe('Arkorm integration', () => {
             new TestArkormModel({ id: 2, name: 'B' }),
         ])
 
-        const paginator = new Paginator(models, 2, 1, true, { path: '/users' })
+        const paginator = new Paginator(models as never, 2, 1, true, { path: '/users' })
         const resource = new GenericResource(paginator)
         const body = JSON.parse(JSON.stringify(resource.getBody()))
 
@@ -246,7 +246,7 @@ describe('Arkorm integration', () => {
                 new TestArkormModel({ id: 1, name: 'A' }),
                 new TestArkormModel({ id: 2, name: 'B' }),
             ])
-            const paginator = new LengthAwarePaginator(models, 10, 2, 2, { path: '/users' })
+            const paginator = new LengthAwarePaginator(models as never, 10, 2, 2, { path: '/users' })
             const ctx = {
                 req: { originalUrl: '/api/v2/users?search=foo' },
                 res: { send: () => { } },
@@ -335,7 +335,7 @@ describe('Arkorm integration', () => {
                 new TestArkormModel({ id: 1, name: 'A' }),
                 new TestArkormModel({ id: 2, name: 'B' }),
             ])
-            const paginator = new Paginator(models, 2, 1, true, { path: '/users' })
+            const paginator = new Paginator(models as never, 2, 1, true, { path: '/users' })
             const ctx = {
                 req: { url: 'http://localhost:3000/users' },
                 res: {},
