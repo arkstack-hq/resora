@@ -89,8 +89,8 @@ importers:
         specifier: ^12.0.5
         version: 12.0.5
       clear-router:
-        specifier: ^2.8.0
-        version: 2.8.0(@h3ravel/support@0.15.11)(@koa/router@15.5.0(koa@3.2.0))(express@5.2.1)(fastify@5.8.5)(h3@2.0.1-rc.14)(hono@4.12.18)(koa@3.2.0)
+        specifier: ^2.8.5
+        version: 2.8.5(@h3ravel/support@0.15.11)(@koa/router@15.5.0(koa@3.2.0))(express@5.2.1)(fastify@5.8.5)(h3@2.0.1-rc.14)(hono@4.12.18)(koa@3.2.0)
       fastify:
         specifier: ^5.8.5
         version: 5.8.5
@@ -1498,8 +1498,8 @@ packages:
   chardet@2.1.1:
     resolution: {integrity: sha512-PsezH1rqdV9VvyNhxxOW32/d75r01NY7TQCmOqomRo15ZSOKbpTFVsfjghxo6JloQUCGnH4k1LGu0R4yCLlWQQ==}
 
-  clear-router@2.8.0:
-    resolution: {integrity: sha512-B8VI5woGvzQKsfDACK7myQ/dl+YMLwlJqqIH79m0pEzRXmhk0gWi7vsrv0aEWTzoY/ZmEWQZGWq9pS2j+MsuYA==}
+  clear-router@2.8.5:
+    resolution: {integrity: sha512-ssdE17iPrhZad3STv4YS8QJD7YCh1eLKSE0XF9JkVaCbzgGiP62U5OJwJsa1V53nz4hWT57ycxSEIUzrN84E+w==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
       '@h3ravel/support': ^0.15.11
@@ -4601,7 +4601,9 @@ snapshots:
 
   chardet@2.1.1: {}
 
-  clear-router@2.8.0(@h3ravel/support@0.15.11)(@koa/router@15.5.0(koa@3.2.0))(express@5.2.1)(fastify@5.8.5)(h3@2.0.1-rc.14)(hono@4.12.18)(koa@3.2.0):
+  clear-router@2.8.5(@h3ravel/support@0.15.11)(@koa/router@15.5.0(koa@3.2.0))(express@5.2.1)(fastify@5.8.5)(h3@2.0.1-rc.14)(hono@4.12.18)(koa@3.2.0):
+    dependencies:
+      jiti: 2.7.0
     optionalDependencies:
       '@h3ravel/support': 0.15.11
       '@koa/router': 15.5.0(koa@3.2.0)
