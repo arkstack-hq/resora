@@ -11,14 +11,13 @@
     "declaration": true,
     "sourceMap": true,
     "outDir": "./dist",
-    "rootDir": "./",
     "types": ["node", "vitest", "express"],
-    "baseUrl": ".",
-    "ignoreDeprecations": "6.0",
     "paths": {
-      "resora": ["src/index.ts"],
+      "src": ["./src/index.ts"],
+      "src/*": ["./src/*"],
+      "resora": ["./src/index.ts"],
       "@resora/plugin-clear-router": [
-        "packages/plugin-clear-router/src/index.ts"
+        "./packages/plugin-clear-router/src/index.ts"
       ]
     }
   },

@@ -1,4 +1,3 @@
-import { afterEach, describe, expect, it } from 'vitest'
 import {
     GenericResource,
     Resource,
@@ -9,6 +8,7 @@ import {
     setGlobalResponseStructure,
     setGlobalResponseWrap,
 } from 'src'
+import { afterEach, describe, expect, it } from 'vitest'
 
 describe('Response Structure', () => {
     afterEach(() => {
