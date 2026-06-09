@@ -13,13 +13,13 @@
         "plugin",
         "typescript"
     ],
-    "homepage": "https://arkstack-tmp.github.io/resora/plugins/clear-router",
+    "homepage": "https://arkstack-hq.github.io/resora/plugins/clear-router",
     "bugs": {
-        "url": "https://github.com/arkstack-tmp/resora/issues"
+        "url": "https://github.com/arkstack-hq/resora/issues"
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/arkstack-tmp/resora.git",
+        "url": "git+https://github.com/arkstack-hq/resora.git",
         "directory": "packages/plugin-clear-router"
     },
     "readme": "README.md",

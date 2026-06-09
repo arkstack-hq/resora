@@ -2,12 +2,12 @@
 
 [![NPM Downloads](https://img.shields.io/npm/dt/@resora/plugin-clear-router.svg)](https://www.npmjs.com/package/@resora/plugin-clear-router)
 [![npm version](https://img.shields.io/npm/v/@resora/plugin-clear-router.svg)](https://www.npmjs.com/package/@resora/plugin-clear-router)
-[![License](https://img.shields.io/npm/l/@resora/plugin-clear-router.svg)](https://github.com/arkstack-tmp/resora/blob/main/LICENSE)
-[![CI](https://github.com/arkstack-tmp/resora/actions/workflows/ci.yml/badge.svg)](https://github.com/arkstack-tmp/resora/actions/workflows/ci.yml)
-[![Deploy Docs](https://github.com/arkstack-tmp/resora/actions/workflows/deploy-docs.yml/badge.svg)](https://github.com/arkstack-tmp/resora/actions/workflows/deploy-docs.yml)
-[![codecov](https://codecov.io/gh/arkstack-tmp/resora/graph/badge.svg?token=IBgFGJCoOr)](https://codecov.io/gh/arkstack-tmp/resora)
+[![License](https://img.shields.io/npm/l/@resora/plugin-clear-router.svg)](https://github.com/arkstack-hq/resora/blob/main/LICENSE)
+[![CI](https://github.com/arkstack-hq/resora/actions/workflows/ci.yml/badge.svg)](https://github.com/arkstack-hq/resora/actions/workflows/ci.yml)
+[![Deploy Docs](https://github.com/arkstack-hq/resora/actions/workflows/deploy-docs.yml/badge.svg)](https://github.com/arkstack-hq/resora/actions/workflows/deploy-docs.yml)
+[![codecov](https://codecov.io/gh/arkstack-hq/resora/graph/badge.svg?token=IBgFGJCoOr)](https://codecov.io/gh/arkstack-hq/resora)
 
-This plugin lets [clear-router](https://arkstack-tmp.github.io/clear-router) route handlers return Resora resources directly.
+This plugin lets [clear-router](https://arkstack-hq.github.io/clear-router) route handlers return Resora resources directly.
 
 Use it when your application routes are registered through clear-router and you want inline handlers or controller actions to return `Resource`, `ResourceCollection`, or other Resora thenables without manually calling `.response(...)`.
 
