@@ -86,6 +86,6 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@h3ravel/musket": "^0.10.1"
+    "@h3ravel/musket": "^2.0.0"
   }
 }
