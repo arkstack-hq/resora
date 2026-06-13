@@ -114,6 +114,42 @@ Resource
   → return structured JSON
 ```
 
+## Framework Adapter Snapshot
+
+Frameworks that own their response lifecycle should consume a response snapshot
+instead of awaiting `ServerResponse`:
+
+```ts
+const response = new UserResource(user)
+  .response()
+  .setStatusCode(201)
+  .setHeaders({
+    'X-Resource': 'user',
+  })
+  .toResponseData();
+
+frameworkResponse.status(response.status);
+frameworkResponse.setHeaders(response.headers);
+frameworkResponse.send(response.body);
+```
+
+`toResponseData()` returns a plain, non-thenable object containing:
+
+- `body`
+- `status`
+- optional `statusText`
+- `headers`
+
+This avoids JavaScript thenable assimilation in async controllers. Returning a
+`ServerResponse` from an async function causes JavaScript to call its `then()`
+method and resolve the function to the response body. Adapters that also need
+status and headers should call `toResponseData()` before crossing that async
+boundary.
+
+The snapshot runs `beforeSend` plugin hooks so it represents the final state an
+adapter should dispatch. It does not write to the raw response or run
+`afterSend`.
+
 ## Execution Model
 
 When `.response()` is used:

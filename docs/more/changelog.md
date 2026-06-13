@@ -8,12 +8,19 @@ The format follows semantic versioning principles.
 
 ### Added
 
+- Added `ServerResponse.toResponseData()` for framework adapters that need a
+  non-thenable snapshot containing the finalized body, status, status text, and
+  headers without dispatching a raw response.
+- Added support for constructing and customizing `ServerResponse` without a raw
+  framework response.
 - Added direct support for Arkormˣ paginated results (`LengthAwarePaginator` and `Paginator`) across `ResourceCollection` and `GenericResource` flows.
 
 - Added direct support for Arkormˣ Models and Collections across `ResourceCollection` and `GenericResource` flows.
 
 ### Documentation
 
+- Added framework adapter guidance for preserving response status and headers
+  across async controller boundaries.
 - Added Arkormˣ paginator examples to the collections and generic resource guides.
 - Added Arkormˣ model and collection examples to the collections and generic resource guides.
 

@@ -2,7 +2,9 @@
 
 Resora works as a pure transformation layer, even when your framework does **not** expose a Connect-style response object.
 
-In these frameworks, use Resora to build a JSON-safe payload, then return or send it with your framework’s native response API.
+In these frameworks, use Resora to build a JSON-safe payload or a complete
+response snapshot, then return or send it with your framework's native response
+API.
 
 ## Core Pattern
 
@@ -15,6 +17,30 @@ const body = new Resource(user).getBody();
 ```
 
 This approach works everywhere because it does not rely on `.response()` transport binding.
+
+## Status And Headers
+
+Use `toResponseData()` when the adapter needs Resora's body, status, and headers:
+
+```ts
+const response = new Resource(user)
+  .response()
+  .setStatusCode(201)
+  .setHeaders({
+    'X-Resource': 'user',
+  })
+  .toResponseData();
+
+return framework.send({
+  body: response.body,
+  status: response.status,
+  headers: response.headers,
+});
+```
+
+The snapshot is a plain object rather than a thenable. This makes it safe to
+return from async controller and adapter code without losing status or header
+metadata.
 
 ## Why this works
 
@@ -106,8 +132,10 @@ class UserResource extends Resource {
 
 All conditional helpers work the same because they are transformation features, not transport features.
 
-## Important Note About `.response()`
+## Choosing The Integration Style
 
-Today, `.response()` and transport methods are designed for H3/Express/Connect-style response objects.
-
-For non-Connect frameworks, prefer `.getBody()` and framework-native sending, as shown above.
+- Use `.getBody()` when only the transformed JSON payload is needed.
+- Use `.response().toResponseData()` when status or headers should travel with
+  the payload.
+- Use `.response(rawResponse)` or await the response when Resora should dispatch
+  directly through a supported mutable response object.

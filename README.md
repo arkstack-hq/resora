@@ -223,6 +223,24 @@ It works with:
 
 Adapters can be added without changing application logic.
 
+Framework adapters that own response dispatch can use a non-thenable snapshot:
+
+```ts
+const response = new UserResource(user)
+  .response()
+  .setStatusCode(201)
+  .setHeaders({ 'X-Resource': 'user' })
+  .toResponseData();
+
+return framework.send(response.body, {
+  status: response.status,
+  headers: response.headers,
+});
+```
+
+This preserves transport metadata across async controller boundaries without
+requiring Resora to write to the framework response directly.
+
 ## Plugin System
 
 Resora exposes a first-class plugin registry for opt-in integrations and lifecycle extensions.

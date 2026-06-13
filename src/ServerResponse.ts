@@ -4,6 +4,13 @@ import type { H3Event } from 'h3'
 import type { Response } from 'express'
 import { runPluginHook } from './plugins'
 
+export interface ServerResponseData<R = any> {
+    body: R
+    status: number
+    statusText?: string
+    headers: Record<string, string>
+}
+
 /**
  * ServerResponse class to handle HTTP response construction and sending, compatible 
  * with both Express and H3 response objects.
@@ -20,11 +27,13 @@ export class ServerResponse<
 > {
     private _status: number = 200
     private sent = false
+    private prepared = false
     headers: Record<string, string> = {}
 
     constructor(response: H3Event['res'], body: R)
     constructor(response: Response, body: R)
-    constructor(private response: Response | H3Event['res'], private body: R) { }
+    constructor(response: undefined, body: R)
+    constructor(private response: Response | H3Event['res'] | undefined, private body: R) { }
 
     /**
      * Set the HTTP status code for the response
@@ -34,6 +43,7 @@ export class ServerResponse<
      */
     setStatusCode (status: number) {
         this._status = status
+        this.prepared = false
 
         return this
     }
@@ -46,6 +56,7 @@ export class ServerResponse<
      */
     setBody (body: R) {
         this.body = body
+        this.prepared = false
 
         return this
     }
@@ -65,9 +76,9 @@ export class ServerResponse<
      * @returns 
      */
     statusText () {
-        if ('statusMessage' in this.response) {
+        if (this.response && 'statusMessage' in this.response) {
             return this.response.statusMessage
-        } else if ('statusText' in this.response) {
+        } else if (this.response && 'statusText' in this.response) {
             return this.response.statusText
         }
 
@@ -126,18 +137,42 @@ export class ServerResponse<
      */
     #addHeader (key: string, value: string) {
         this.headers[key] = value
+        this.prepared = false
+
         if (
+            this.response &&
             'headers' in this.response &&
             this.response.headers &&
             typeof this.response.headers.set === 'function'
         ) {
             this.response.headers.set(key, value)
-        } else if ('setHeader' in this.response) {
+        } else if (this.response && 'setHeader' in this.response) {
             this.response.setHeader(key, value)
-        } else if ('set' in this.response && typeof this.response.set === 'function') {
+        } else if (this.response && 'set' in this.response && typeof this.response.set === 'function') {
             this.response.set(key, value)
-        } else if ('header' in this.response && typeof this.response.header === 'function') {
+        } else if (this.response && 'header' in this.response && typeof this.response.header === 'function') {
             this.response.header(key, value)
+        }
+    }
+
+    /**
+     * Return the finalized response state without dispatching it.
+     *
+     * This is the preferred integration boundary for frameworks that own their
+     * response lifecycle. The returned object is deliberately not thenable.
+     */
+    toResponseData (): ServerResponseData<R> {
+        this.#prepare()
+
+        const statusText = this.statusText()
+
+        return {
+            body: this.body,
+            status: this._status,
+            ...(statusText ? { statusText } : {}),
+            headers: {
+                ...this.headers,
+            },
         }
     }
 
@@ -154,22 +189,15 @@ export class ServerResponse<
 
         if (typeof body !== 'undefined') {
             this.body = body
+            this.prepared = false
         }
 
-        const beforeSend = runPluginHook('beforeSend', {
-            response: this,
-            rawResponse: this.response,
-            body: this.body,
-            status: this._status,
-            headers: {
-                ...this.headers,
-            },
-        })
+        this.#prepare()
 
-        this.body = beforeSend.body
-        this._status = beforeSend.status
-        this.headers = {
-            ...beforeSend.headers,
+        if (!this.response) {
+            this.sent = true
+
+            return this.body
         }
 
         if ('send' in this.response && typeof this.response.send === 'function') {
@@ -187,15 +215,7 @@ export class ServerResponse<
             this.response.send(this.body)
             this.sent = true
 
-            runPluginHook('afterSend', {
-                response: this,
-                rawResponse: this.response,
-                body: this.body,
-                status: this._status,
-                headers: {
-                    ...this.headers,
-                },
-            })
+            this.#runAfterSend()
 
             return this.body
         }
@@ -213,8 +233,17 @@ export class ServerResponse<
         }
 
         this.sent = true
+        this.#runAfterSend()
 
-        runPluginHook('afterSend', {
+        return this.body
+    }
+
+    #prepare () {
+        if (this.prepared) {
+            return
+        }
+
+        const beforeSend = runPluginHook('beforeSend', {
             response: this,
             rawResponse: this.response,
             body: this.body,
@@ -224,7 +253,24 @@ export class ServerResponse<
             },
         })
 
-        return this.body
+        this.body = beforeSend.body
+        this._status = beforeSend.status
+        this.headers = {
+            ...beforeSend.headers,
+        }
+        this.prepared = true
+    }
+
+    #runAfterSend () {
+        runPluginHook('afterSend', {
+            response: this,
+            rawResponse: this.response,
+            body: this.body,
+            status: this._status,
+            headers: {
+                ...this.headers,
+            },
+        })
     }
 
     #rawResponseSent () {

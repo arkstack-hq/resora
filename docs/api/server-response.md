@@ -39,6 +39,33 @@ response.setCookie('token', 'abc123', {
 });
 ```
 
+### toResponseData()
+
+Returns the finalized response state without dispatching it:
+
+```ts
+const data = resource
+  .response()
+  .setStatusCode(201)
+  .setHeaders({ 'X-Resource': 'user' })
+  .toResponseData();
+
+// {
+//   body: { data: ... },
+//   status: 201,
+//   statusText?: string,
+//   headers: { 'X-Resource': 'user' }
+// }
+```
+
+The returned `ServerResponseData` object is not thenable. Framework adapters can
+use it to apply Resora's body, status, and headers through their native response
+API without triggering Resora's automatic dispatch.
+
+`beforeSend` plugin hooks are applied before the snapshot is returned.
+`afterSend` hooks remain reserved for actual dispatch through `send()` or
+awaiting the `ServerResponse`.
+
 ## Promise Support
 
 ```ts
