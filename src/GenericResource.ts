@@ -84,7 +84,10 @@ export class GenericResource<
      */
     if (source && typeof source === 'object' && !Array.isArray(source) && !isArkormLikeCollection(source)) {
       const sourceKeys = isArkormLikeModel(source)
-        ? Object.keys(source.toObject())
+        ? [...new Set([
+          ...Object.keys(source.getRawAttributes?.() ?? {}),
+          ...Object.keys(source.toObject()),
+        ])]
         : Object.keys(source)
 
       for (const key of sourceKeys) {

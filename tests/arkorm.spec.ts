@@ -8,6 +8,10 @@ class TestArkormModel extends Model<Record<string, unknown>> {
 class UserModel extends Model<{ id: number, name: string }> {
 }
 
+class HiddenUserModel extends Model<Record<string, unknown>> {
+    protected hidden = ['password']
+}
+
 class UserResource extends Resource {
     public data () {
         return {
@@ -39,6 +43,28 @@ describe('Arkorm integration', () => {
 
         const resource = new Resource(model)
 
+        expect(resource.getBody()).toEqual({
+            data: {
+                id: 1,
+                name: 'Jane',
+            },
+        })
+    })
+
+    it('exposes hidden Arkorm attributes on the resource without serializing them', () => {
+        const model = new HiddenUserModel({
+            id: 1,
+            name: 'Jane',
+            password: 'secret',
+        })
+
+        const resource = new Resource(model)
+
+        expect(resource.password).toBe('secret')
+        expect(resource.toObject()).toEqual({
+            id: 1,
+            name: 'Jane',
+        })
         expect(resource.getBody()).toEqual({
             data: {
                 id: 1,

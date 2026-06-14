@@ -5,6 +5,10 @@ import { describe, expect, it } from 'vitest'
 class TestArkormModel extends Model<Record<string, unknown>> {
 }
 
+class HiddenArkormModel extends Model<Record<string, unknown>> {
+    protected hidden = ['password']
+}
+
 describe('Generic Core', () => {
     it('should create a Resource instance with correct data', () => {
         const resourceData: ResourceData = { id: 1, name: 'Test Resource' }
@@ -49,6 +53,27 @@ describe('Generic Core', () => {
         const model = new TestArkormModel({ id: 1, name: 'Jane' })
         const resource = new GenericResource(model)
 
+        expect(resource.getBody()).toEqual({
+            data: {
+                id: 1,
+                name: 'Jane',
+            },
+        })
+    })
+
+    it('should expose hidden Arkorm attributes without serializing them', () => {
+        const model = new HiddenArkormModel({
+            id: 1,
+            name: 'Jane',
+            password: 'secret',
+        })
+        const resource = new GenericResource(model)
+
+        expect(resource.password).toBe('secret')
+        expect(resource.toObject()).toEqual({
+            id: 1,
+            name: 'Jane',
+        })
         expect(resource.getBody()).toEqual({
             data: {
                 id: 1,
@@ -104,4 +129,4 @@ describe('Generic Core', () => {
             ],
         })
     })
-}) 
+})

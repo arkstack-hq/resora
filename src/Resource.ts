@@ -65,7 +65,10 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
      */
     if (!Array.isArray(source)) {
       const sourceKeys = isArkormLikeModel(source)
-        ? Object.keys(source.toObject())
+        ? [...new Set([
+          ...Object.keys(source.getRawAttributes?.() ?? {}),
+          ...Object.keys(source.toObject()),
+        ])]
         : Object.keys(source)
 
       for (const key of sourceKeys) {
