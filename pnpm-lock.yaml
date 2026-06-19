@@ -28,8 +28,8 @@ importers:
         specifier: 4.0.18
         version: 4.0.18(vitest@4.0.18(@types/node@20.19.33)(jiti@2.7.0)(tsx@4.21.0))
       arkormx:
-        specifier: ^2.8.0
-        version: 2.8.0(@types/node@20.19.33)
+        specifier: ^2.9.0
+        version: 2.9.0(@types/node@20.19.33)
       barrelize:
         specifier: ^1.7.3
         version: 1.7.3
@@ -1382,8 +1382,8 @@ packages:
   argparse@1.0.10:
     resolution: {integrity: sha512-o5Roy6tNG4SL/FOkCAN6RzjiakZS25RLYFrcMttJqbdd8BWrnA+fGz57iN5Pb06pvBGvl5gQ0B48dJlslXvoTg==}
 
-  arkormx@2.8.0:
-    resolution: {integrity: sha512-0Mrdkk8hGVwVc6ms7nA9Zr65FfSj/JLpxagTUk9bfBtZ3bpO/d5UQK1tAXK71jify+m9Dh2GeeLoIrUWUR4w8g==}
+  arkormx@2.9.0:
+    resolution: {integrity: sha512-BZJVvO6nBX18dXAOJDjNWlYqtbPOt7aDxSmS58GRPOGh99TL1LtzFTctONZhNK95KVgy3Fft/sX1JVacZoEEWw==}
     engines: {node: '>=20.0.0'}
     hasBin: true
 
@@ -4477,7 +4477,7 @@ snapshots:
     dependencies:
       sprintf-js: 1.0.3
 
-  arkormx@2.8.0(@types/node@20.19.33):
+  arkormx@2.9.0(@types/node@20.19.33):
     dependencies:
       '@h3ravel/collect.js': 5.3.7
       '@h3ravel/musket': 2.0.0(@types/node@20.19.33)
