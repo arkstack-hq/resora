@@ -1,6 +1,6 @@
 {
     "name": "@resora/plugin-clear-router",
-    "version": "1.0.63",
+    "version": "1.0.65",
     "description": "Opt-in bridge plugin for using resora return values inside clear-router handlers.",
     "publishConfig": {
         "access": "public"
@@ -50,7 +50,7 @@
         "resora": "workspace:^"
     },
     "peerDependencies": {
-        "clear-router": "^2.8.8"
+        "clear-router": "^2.8.9"
     },
     "devDependencies": {
         "@koa/router": "^15.5.0",
