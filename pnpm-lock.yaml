@@ -28,8 +28,8 @@ importers:
         specifier: 4.0.18
         version: 4.0.18(vitest@4.0.18(@types/node@20.19.33)(jiti@2.7.0)(tsx@4.21.0))
       arkormx:
-        specifier: ^2.9.0
-        version: 2.9.0(@types/node@20.19.33)
+        specifier: ^2.10.1
+        version: 2.10.2(@types/node@20.19.33)
       barrelize:
         specifier: ^1.7.3
         version: 1.7.3
@@ -76,8 +76,8 @@ importers:
   packages/plugin-clear-router:
     dependencies:
       clear-router:
-        specifier: ^2.8.8
-        version: 2.8.8(@h3ravel/support@2.1.4(@types/node@20.19.33))(@koa/router@15.5.0(koa@3.2.0))(express@5.2.1)(fastify@5.8.5)(h3@2.0.1-rc.14)(hono@4.12.18)(koa@3.2.0)
+        specifier: ^2.9.0
+        version: 2.9.0(@koa/router@15.5.0(koa@3.2.0))(express@5.2.1)(fastify@5.8.5)(h3@2.0.1-rc.14)(hono@4.12.18)(koa@3.2.0)
       resora:
         specifier: workspace:^
         version: link:../..
@@ -1382,8 +1382,8 @@ packages:
   argparse@1.0.10:
     resolution: {integrity: sha512-o5Roy6tNG4SL/FOkCAN6RzjiakZS25RLYFrcMttJqbdd8BWrnA+fGz57iN5Pb06pvBGvl5gQ0B48dJlslXvoTg==}
 
-  arkormx@2.9.0:
-    resolution: {integrity: sha512-BZJVvO6nBX18dXAOJDjNWlYqtbPOt7aDxSmS58GRPOGh99TL1LtzFTctONZhNK95KVgy3Fft/sX1JVacZoEEWw==}
+  arkormx@2.10.2:
+    resolution: {integrity: sha512-NjyccRHYTRJMuiR1CSRSJEJXNlvVO3FcFHEPeEKDuYbaoN4vY3rqIcNgm6axSbQtnDDW4/NAdagGjhy7zWsveQ==}
     engines: {node: '>=20.0.0'}
     hasBin: true
 
@@ -1498,11 +1498,11 @@ packages:
   chardet@2.1.1:
     resolution: {integrity: sha512-PsezH1rqdV9VvyNhxxOW32/d75r01NY7TQCmOqomRo15ZSOKbpTFVsfjghxo6JloQUCGnH4k1LGu0R4yCLlWQQ==}
 
-  clear-router@2.8.8:
-    resolution: {integrity: sha512-dYSNcG6dLItQ0U99zoh1NQkv6i7s8KGy0Cz9sCfZMEKUk2cYxc1l4RXcjuro9nZ+LXfu9wvICweSFXsNMCFYgQ==}
+  clear-router@2.9.0:
+    resolution: {integrity: sha512-2y/uDSwun64bU/KZcLJbW9A3ggmz/hSZLctAZcsYtyStxza53r+nX49egZ6t46/phiqKEcGlkSgeQWCtLTRA1Q==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
-      '@h3ravel/support': ^2.1.4
+      '@h3ravel/support': ^2.2.0
       '@koa/router': ^15.0.0
       express: ^5.1.0
       fastify: ^5.0.0
@@ -4477,7 +4477,7 @@ snapshots:
     dependencies:
       sprintf-js: 1.0.3
 
-  arkormx@2.9.0(@types/node@20.19.33):
+  arkormx@2.10.2(@types/node@20.19.33):
     dependencies:
       '@h3ravel/collect.js': 5.3.7
       '@h3ravel/musket': 2.0.0(@types/node@20.19.33)
@@ -4594,11 +4594,10 @@ snapshots:
 
   chardet@2.1.1: {}
 
-  clear-router@2.8.8(@h3ravel/support@2.1.4(@types/node@20.19.33))(@koa/router@15.5.0(koa@3.2.0))(express@5.2.1)(fastify@5.8.5)(h3@2.0.1-rc.14)(hono@4.12.18)(koa@3.2.0):
+  clear-router@2.9.0(@koa/router@15.5.0(koa@3.2.0))(express@5.2.1)(fastify@5.8.5)(h3@2.0.1-rc.14)(hono@4.12.18)(koa@3.2.0):
     dependencies:
       jiti: 2.7.0
     optionalDependencies:
-      '@h3ravel/support': 2.1.4(@types/node@20.19.33)
       '@koa/router': 15.5.0(koa@3.2.0)
       express: 5.2.1
       fastify: 5.8.5
