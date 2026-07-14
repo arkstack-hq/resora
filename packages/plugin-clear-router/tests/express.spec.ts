@@ -1,5 +1,5 @@
 import { Bind, Container } from 'clear-router/decorators'
-import { Resource, registerPlugin, resetPluginsForTests } from 'resora'
+import { Resource, registerPlugin, resetPluginsForTests } from '../../../src'
 import { beforeEach, describe, expect, it } from 'vitest'
 import express, { Router as ExpressRouter } from 'express'
 

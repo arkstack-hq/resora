@@ -1,4 +1,4 @@
-import { Resource, registerPlugin, resetPluginsForTests } from 'resora'
+import { Resource, registerPlugin, resetPluginsForTests } from '../../../src'
 import { beforeEach, describe, it } from 'vitest'
 
 import { Router as ClearRouter } from 'clear-router/h3'
@@ -37,7 +37,7 @@ describe('@resora/plugin-clear-router h3', () => {
 
     it('supports controller actions and preserves withResponse mutations', async () => {
         class CustomResource extends Resource {
-            withResponse (response: any) {
+            withResponse(response: any) {
                 response
                     .header('X-Plugin', '1')
                     .setStatusCode(201)
@@ -45,7 +45,7 @@ describe('@resora/plugin-clear-router h3', () => {
         }
 
         class UserController extends Controller {
-            show () {
+            show() {
                 return new CustomResource({ id: 2, name: 'Grace' })
             }
         }

@@ -1,4 +1,4 @@
-import { Resource, registerPlugin, resetPluginsForTests } from 'resora'
+import { Resource, registerPlugin, resetPluginsForTests } from '../../../src'
 import { beforeEach, describe, it } from 'vitest'
 import fastify, { FastifyInstance } from 'fastify'
 
@@ -43,7 +43,7 @@ describe('@resora/plugin-clear-router fastify', () => {
 
     it('supports controller actions and preserves withResponse mutations', async () => {
         class CustomResource extends Resource {
-            withResponse (response: any) {
+            withResponse(response: any) {
                 response
                     .header('X-Plugin', '1')
                     .setStatusCode(202)
@@ -51,7 +51,7 @@ describe('@resora/plugin-clear-router fastify', () => {
         }
 
         class UserController extends Controller {
-            show () {
+            show() {
                 return new CustomResource({ id: 2, name: 'Grace' })
             }
         }
