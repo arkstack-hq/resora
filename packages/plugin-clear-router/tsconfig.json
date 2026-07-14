@@ -7,7 +7,6 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "paths": {
-      "resora": ["../../src/index.ts"],
       "@resora/plugin-clear-router": ["./src/index.ts"]
     }
   },
