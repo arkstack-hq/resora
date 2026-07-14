@@ -1,7 +1,13 @@
 import { defineConfig } from 'vitest/config'
+import { fileURLToPath } from 'node:url'
 import swc from 'unplugin-swc'
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      resora: fileURLToPath(new URL('../../src/index.ts', import.meta.url)),
+    },
+  },
   plugins: [
     swc.vite({
       jsc: {
