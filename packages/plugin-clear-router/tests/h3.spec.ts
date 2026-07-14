@@ -36,12 +36,17 @@ describe('@resora/plugin-clear-router h3', () => {
     })
 
     it('supports controller actions and preserves withResponse mutations', async () => {
-        class UserController extends Controller {
-            show () {
-                return new Resource({ id: 2, name: 'Grace' })
-                    .response(this.ctx.res)
+        class CustomResource extends Resource {
+            withResponse (response: any) {
+                response
                     .header('X-Plugin', '1')
                     .setStatusCode(201)
+            }
+        }
+
+        class UserController extends Controller {
+            show () {
+                return new CustomResource({ id: 2, name: 'Grace' })
             }
         }
 

@@ -40,7 +40,7 @@
         "README.md"
     ],
     "scripts": {
-        "test": "vitest run tests/*.spec.ts",
+        "test": "vitest run --config vitest.config.ts tests/*.spec.ts",
         "build": "tsdown",
         "lint": "eslint src tests --ext .ts",
         "version:patch": "pnpm version patch",
@@ -50,13 +50,16 @@
         "resora": "workspace:^"
     },
     "peerDependencies": {
-        "clear-router": "^2.9.0"
+        "clear-router": "^2.9.2"
     },
     "devDependencies": {
+        "unplugin-swc": "^1.5.9",
+        "reflect-metadata": "^0.2.2",
         "@koa/router": "^15.5.0",
         "@types/koa": "^3.0.2",
         "@types/koa__router": "^12.0.5",
         "fastify": "^5.8.5",
+        "h3": "^2.0.1-rc.22",
         "hono": "^4.12.18",
         "koa": "^3.2.0",
         "parasito": "^0.1.6"

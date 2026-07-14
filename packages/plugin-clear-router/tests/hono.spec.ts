@@ -32,7 +32,6 @@ describe('@resora/plugin-clear-router hono', () => {
 
         await request(app).get('/users/1')
             .expect(200)
-            // .expect('x-plugin', '1')
             .expect({
                 data: {
                     id: 1,
@@ -62,7 +61,7 @@ describe('@resora/plugin-clear-router hono', () => {
 
         await request(app).get('/users/2')
             .expect(202)
-            // .expect('x-plugin', '1')
+            .expect('x-plugin', '1')
             .expect({
                 data: {
                     id: 2,

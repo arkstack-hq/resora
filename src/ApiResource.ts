@@ -1,4 +1,4 @@
-import { Resource } from 'src'
+import { Resource } from './Resource'
 
 /**
  * ApiResource function to return the Resource instance

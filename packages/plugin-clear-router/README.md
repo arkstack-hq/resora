@@ -86,9 +86,9 @@ import { clearRouterKoaPlugin } from '@resora/plugin-clear-router';
 registerPlugin(clearRouterKoaPlugin);
 ```
 
-### Generic Runtime
+### All Adapters
 
-Use the generic plugin when your runtime does not have a dedicated adapter.
+Register the bundled plugin array when the same process uses more than one supported clear-router adapter.
 
 ```ts
 import { registerPlugin } from 'resora';
@@ -142,10 +142,12 @@ Router.get('/users', () => {
 | `clearRouterH3Plugin`      | H3 runtime integration      |
 | `clearRouterHonoPlugin`    | Hono runtime integration    |
 | `clearRouterKoaPlugin`     | Koa runtime integration     |
-| `clearRouterPlugin`        | Generic runtime integration |
+| `clearRouterPlugin`        | All adapter integrations    |
 
 ## Notes
 
 Plugins are opt-in and do not modify `clear-router` or `resora` globally unless explicitly registered.
 
 Only register the plugin matching the runtime used by your Clear Router application.
+
+Controller arguments resolved through clear-router's container retain their configured singleton, request, or transient lifetime when the controller returns a Resora resource.

@@ -4,21 +4,16 @@ import { Router as ClearRouterH3 } from 'clear-router/h3'
 import { Router as ClearRouterHono } from 'clear-router/hono'
 import { Router as ClearRouterKoa } from 'clear-router/koa'
 import type { CoreRouter } from 'clear-router/core'
-import type { RouteHandler as ExpressRouteHandler } from 'clear-router/types/express'
-import type { RouteHandler as FastifyRouteHandler } from 'clear-router/types/fastify'
-import type { RouteHandler as H3RouteHandler } from 'clear-router/types/h3'
-import type { RouteHandler as HonoRouteHandler } from 'clear-router/types/hono'
-import type { RouteHandler as KoaRouteHandler } from 'clear-router/types/koa'
 import { definePlugin } from 'resora'
 
-type AnyRouteHandler =
-    | ExpressRouteHandler
-    | FastifyRouteHandler
-    | H3RouteHandler
-    | HonoRouteHandler
-    | KoaRouteHandler
+type AnyRouteHandler = (...args: any[]) => any
 type ResolveContext = (ctx: unknown) => unknown
 type ResolveResult = (ctx: unknown, result: unknown, resolved: unknown) => unknown
+type PatchState = {
+    runWithCtx: <R>(ctx: unknown, callback: () => R) => R
+    resolveContext: ResolveContext
+    resolveResult?: ResolveResult
+}
 
 const patchedKey = Symbol.for('resora:clear-router-plugin:patched')
 
@@ -37,18 +32,25 @@ const patchRouter = <T extends typeof CoreRouter> (
     resolveResult?: ResolveResult
 ) => {
     const target = router as T & {
-        [patchedKey]?: boolean
+        [patchedKey]?: PatchState
         resolveHandler: (route: any) => {
             handlerFunction: AnyRouteHandler | null
             instance: unknown
         }
+        getCurrentPluginRequestContext?: () => { ctx?: unknown } | undefined
     }
 
-    if (target[patchedKey]) {
+    const current = target[patchedKey]
+    if (current) {
+        current.runWithCtx = runWithCtx
+        current.resolveContext = resolveContext
+        current.resolveResult = resolveResult
+
         return
     }
 
     const resolveHandler = target.resolveHandler.bind(target)
+    const state: PatchState = { runWithCtx, resolveContext, resolveResult }
 
     target.resolveHandler = ((route: any) => {
         const resolved = resolveHandler(route)
@@ -59,13 +61,15 @@ const patchRouter = <T extends typeof CoreRouter> (
 
         const handlerFunction = resolved.handlerFunction
 
-        resolved.handlerFunction = ((ctx: unknown, req: unknown) => {
-            return runWithCtx(resolveContext(ctx), async () => {
-                const result = handlerFunction(ctx as never, req as never)
+        resolved.handlerFunction = ((...args: any[]) => {
+            const ctx = target.getCurrentPluginRequestContext?.()?.ctx ?? args[0]
+
+            return state.runWithCtx(state.resolveContext(ctx), async () => {
+                const result = handlerFunction(...args)
                 const resolvedResult = await Promise.resolve(result)
 
-                return resolveResult
-                    ? resolveResult(ctx, result, resolvedResult)
+                return state.resolveResult
+                    ? state.resolveResult(ctx, result, resolvedResult)
                     : resolvedResult
             })
         }) as AnyRouteHandler
@@ -73,7 +77,7 @@ const patchRouter = <T extends typeof CoreRouter> (
         return resolved
     }) as typeof target.resolveHandler
 
-    target[patchedKey] = true
+    target[patchedKey] = state
 }
 
 /**

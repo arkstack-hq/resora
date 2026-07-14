@@ -32,7 +32,7 @@ Available exports:
 - `clearRouterKoaPlugin`
 - `clearRouterPlugin`
 
-`clearRouterPlugin` registers all available clear-router adapter bridges.
+`clearRouterPlugin` is an array that registers all available clear-router adapter bridges. Use it when one process serves routes through multiple supported adapters; otherwise register only the adapter-specific plugin.
 
 ## Express
 
@@ -169,8 +169,23 @@ class UserResource extends Resource {
 }
 ```
 
+## Container Binding
+
+The bridge runs after clear-router has established its request container, so decorated controller arguments retain their configured singleton, request, or transient lifetime.
+
+```ts
+import { Bind } from 'clear-router/decorators';
+
+class UserController extends Controller {
+  @Bind(UserService)
+  show(service: UserService) {
+    return new Resource(service.user());
+  }
+}
+```
+
 ## Notes
 
 - The plugin is opt-in and only affects routes after registration.
 - Register the adapter plugin before applying clear-router routes.
-- clear-router `2.5.0` or newer is recommended so direct returns are normalized consistently across adapters, including Koa.
+- clear-router `2.9.2` or newer is required for scoped container and adapter-isolation support.

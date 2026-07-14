@@ -8,5 +8,6 @@ export default defineConfig({
     platform: 'node',
     outDir: 'dist',
     format: ['esm', 'cjs'],
+    external: ['clear-router', 'resora'],
     skipNodeModulesBundle: true,
 })

@@ -1,4 +1,4 @@
-import { Resource } from 'src'
+import { Resource } from './Resource'
 
 /**
  * BaseResource function to create a Resource instance

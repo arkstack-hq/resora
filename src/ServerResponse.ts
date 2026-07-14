@@ -148,10 +148,10 @@ export class ServerResponse<
             this.response.headers.set(key, value)
         } else if (this.response && 'setHeader' in this.response) {
             this.response.setHeader(key, value)
-        } else if (this.response && 'set' in this.response && typeof this.response.set === 'function') {
-            this.response.set(key, value)
         } else if (this.response && 'header' in this.response && typeof this.response.header === 'function') {
             this.response.header(key, value)
+        } else if (this.response && 'set' in this.response && typeof this.response.set === 'function') {
+            this.response.set(key, value)
         }
     }
 

@@ -81,4 +81,18 @@ describe('ServerResponse', () => {
             plugin: true,
         })
     })
+
+    it('prefers framework header methods over generic context setters', () => {
+        const rawResponse = {
+            header: vi.fn(),
+            set: vi.fn(),
+        } as any
+
+        // @ts-expect-error just for this test
+        new ServerResponse(rawResponse, undefined)
+            .header('X-Resource', 'user')
+
+        expect(rawResponse.header).toHaveBeenCalledWith('X-Resource', 'user')
+        expect(rawResponse.set).not.toHaveBeenCalled()
+    })
 })

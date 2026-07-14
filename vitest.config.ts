@@ -2,13 +2,23 @@ import { defineConfig } from 'vitest/config'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineConfig({
-    plugins: [tsconfigPaths()],
+    plugins: [tsconfigPaths(),],
 
     test: {
         root: './',
         passWithNoTests: true,
         environment: 'node',
-        include: ['**/*.{test,spec}.?(c|m)[jt]s?(x)'],
+        include: ['tests/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
+        projects: [
+            {
+                extends: true,
+                test: {
+                    name: 'resora',
+                    include: ['tests/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
+                },
+            },
+            './packages/plugin-clear-router/vitest.config.ts',
+        ],
         env: {
             NODE_ENV: 'test',
         },
