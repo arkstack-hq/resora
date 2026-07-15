@@ -18,6 +18,7 @@ type ResoraCollectionLike = {
     getBodyAsync?: () => Promise<unknown>
     json: () => unknown
     setCollects: (...args: unknown[]) => unknown
+    isSerializationPending?: () => boolean
 }
 
 type ResoraSerializerLike = {
@@ -25,12 +26,35 @@ type ResoraSerializerLike = {
     getBodyAsync?: () => Promise<unknown>
     json: () => unknown
     toObject: () => unknown
+    isSerializationPending?: () => boolean
 }
 
 export const isPromiseLike = (value: unknown): value is PromiseLike<unknown> => {
     return !!value
         && (typeof value === 'object' || typeof value === 'function')
         && typeof (value as PromiseLike<unknown>).then === 'function'
+}
+
+export const requiresAsyncNormalization = (value: unknown): boolean => {
+    if (isResoraCollectionLike(value) || isResoraSerializerLike(value)) {
+        value.getBody()
+
+        return value.isSerializationPending?.() ?? false
+    }
+
+    if (isPromiseLike(value)) {
+        return true
+    }
+
+    if (Array.isArray(value)) {
+        return value.some(item => requiresAsyncNormalization(item))
+    }
+
+    if (isPlainObject(value)) {
+        return Object.values(value).some(item => requiresAsyncNormalization(item))
+    }
+
+    return false
 }
 
 const unwrapNestedSerializerBody = (body: unknown) => {

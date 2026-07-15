@@ -19,9 +19,9 @@ import {
   extractResponseFromCtx,
   getCaseTransformer,
   isArkormLikeModel,
-  isPromiseLike,
   normalizeSerializableData,
   normalizeSerializableDataAsync,
+  requiresAsyncNormalization,
   sanitizeConditionalAttributes,
   setRequestUrl,
   transformKeys,
@@ -38,6 +38,7 @@ import {
 export class Resource<R extends ResourceData | NonCollectible = ResourceData> extends BaseSerializer<R> {
   [key: string]: any;
   private body: ResourceBody<R> = { data: {} as any }
+  private pendingData?: unknown
   private res?: Response
   public resource: R
   protected withResponseContext?: {
@@ -196,7 +197,8 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
       const ctx = this.resolveSerializationContext()
       const resource = this.data(ctx)
 
-      if (isPromiseLike(resource)) {
+      if (requiresAsyncNormalization(resource)) {
+        this.pendingData = resource
         this.called.json = false
 
         return this
@@ -249,7 +251,8 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
       this.called.json = true
 
       const ctx = this.resolveSerializationContext()
-      const resource = await this.data(ctx)
+      const resource = this.pendingData ?? this.data(ctx)
+      this.pendingData = undefined
 
       let data: any = await normalizeSerializableDataAsync(resource)
 
@@ -364,6 +367,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
 
     return this.runResponse({
       ensureJson: () => this.json(),
+      ensureJsonAsync: () => this.jsonAsync(),
       rawResponse,
       body: () => this.body,
       createServerResponse: (raw, body) => {
