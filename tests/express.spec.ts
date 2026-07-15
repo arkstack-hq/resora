@@ -352,6 +352,28 @@ describe('Connect-style Requests (Express)', () => {
             return await new ProfileCollection(models, res).response().setStatusCode(202)
         })
 
+        app.get('/additional/test', async (_, res) => {
+            return await new UserResource({
+                id: 2,
+                name: 'John',
+                profile: {
+                    id: 20,
+                    displayName: 'John Doe',
+                },
+            }, res)
+                .additional({ data: { fromAdditional: true }, status: 'success' })
+                .response()
+        })
+
+        app.get('/all/additional/test', async (_, res) => {
+            return await new ProfileCollection(models, res)
+                .additional({
+                    data: [{ id: 3, displayName: 'Additional' }],
+                    status: 'success',
+                })
+                .response()
+        })
+
         await request(app).get('/test').expect(202).expect({
             data: {
                 id: 1,
@@ -365,6 +387,16 @@ describe('Connect-style Requests (Express)', () => {
 
         await request(app).get('/all/test').expect(202).expect({
             data: models.all(),
+        })
+
+        await request(app).get('/additional/test').expect({
+            data: { fromAdditional: true },
+            status: 'success',
+        })
+
+        await request(app).get('/all/additional/test').expect({
+            data: [{ id: 3, displayName: 'Additional' }],
+            status: 'success',
         })
     })
 

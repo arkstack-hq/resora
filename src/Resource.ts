@@ -39,6 +39,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
   [key: string]: any;
   private body: ResourceBody<R> = { data: {} as any }
   private pendingData?: unknown
+  private pendingAdditional: Record<string, any>[] = []
   private res?: Response
   public resource: R
   protected withResponseContext?: {
@@ -235,6 +236,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
 
       this.body = appendRootProperties(this.body, customMeta, rootKey) as ResourceBody<R>
       this.body = this.applySerializePlugins(this.body) as ResourceBody<R>
+      this.applyPendingAdditional()
     }
 
     return this
@@ -284,6 +286,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
 
       this.body = appendRootProperties(this.body, customMeta, rootKey) as ResourceBody<R>
       this.body = this.applySerializePlugins(this.body) as ResourceBody<R>
+      this.applyPendingAdditional()
     }
 
     return undefined
@@ -329,21 +332,30 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
   additional<X extends Record<string, any>>(extra: X) {
     this.called.additional = true
     this.json()
+    this.pendingAdditional.push({ ...extra })
 
-    const payloadKey = this.getPayloadKey()
-
-    if (extra.data && payloadKey && typeof this.body[payloadKey] !== 'undefined') {
-      this.body[payloadKey] = Array.isArray(this.body[payloadKey])
-        ? [...this.body[payloadKey], ...extra.data]
-        : { ...this.body[payloadKey], ...extra.data }
-    }
-
-    this.body = {
-      ...this.body,
-      ...extra,
+    if (this.called.json) {
+      this.applyPendingAdditional()
     }
 
     return this
+  }
+
+  private applyPendingAdditional() {
+    for (const extra of this.pendingAdditional.splice(0)) {
+      const payloadKey = this.getPayloadKey()
+
+      if (extra.data && payloadKey && typeof this.body[payloadKey] !== 'undefined') {
+        this.body[payloadKey] = Array.isArray(this.body[payloadKey])
+          ? [...this.body[payloadKey], ...extra.data]
+          : { ...this.body[payloadKey], ...extra.data }
+      }
+
+      this.body = {
+        ...this.body,
+        ...extra,
+      }
+    }
   }
 
   /**

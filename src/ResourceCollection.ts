@@ -45,6 +45,7 @@ export class ResourceCollection<
   private body: CollectionBody<R> = { data: [] as any }
   private pendingData?: unknown
   private pendingDataCollected = false
+  private pendingAdditional: Record<string, any>[] = []
   private res?: Response
   public resource: R
   public collects?: typeof Resource<T>
@@ -322,6 +323,7 @@ export class ResourceCollection<
         rootKey
       ) as CollectionBody<R>
       this.body = this.applySerializePlugins(this.body) as CollectionBody<R>
+      this.applyPendingAdditional()
     }
 
     return this
@@ -395,6 +397,7 @@ export class ResourceCollection<
         rootKey
       ) as CollectionBody<R>
       this.body = this.applySerializePlugins(this.body) as CollectionBody<R>
+      this.applyPendingAdditional()
     }
 
     return undefined
@@ -481,22 +484,31 @@ export class ResourceCollection<
   additional<X extends Record<string, any>>(extra: X) {
     this.called.additional = true
     this.json()
+    this.pendingAdditional.push({ ...extra })
 
-    delete extra.cursor
-    delete extra.pagination
-
-    const payloadKey = this.getPayloadKey()
-
-    if (extra.data && payloadKey && Array.isArray(this.body[payloadKey])) {
-      this.body[payloadKey] = [...this.body[payloadKey], ...extra.data] as never
-    }
-
-    this.body = {
-      ...this.body,
-      ...extra,
+    if (this.called.json) {
+      this.applyPendingAdditional()
     }
 
     return this
+  }
+
+  private applyPendingAdditional() {
+    for (const extra of this.pendingAdditional.splice(0)) {
+      delete extra.cursor
+      delete extra.pagination
+
+      const payloadKey = this.getPayloadKey()
+
+      if (extra.data && payloadKey && Array.isArray(this.body[payloadKey])) {
+        this.body[payloadKey] = [...this.body[payloadKey], ...extra.data] as never
+      }
+
+      this.body = {
+        ...this.body,
+        ...extra,
+      }
+    }
   }
 
   /**

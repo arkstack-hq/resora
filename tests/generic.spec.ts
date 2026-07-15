@@ -129,4 +129,25 @@ describe('Generic Core', () => {
             ],
         })
     })
+
+    it('should retain additional data after async serialization', async () => {
+        class AsyncGenericResource extends GenericResource {
+            data(): any {
+                return Promise.resolve({ id: 1, name: 'Jane' })
+            }
+        }
+
+        const body = await new AsyncGenericResource({ id: 1, name: 'Jane' })
+            .additional({ data: { fromAdditional: true }, status: 'success' })
+            .response()
+
+        expect(body).toEqual({
+            data: {
+                id: 1,
+                name: 'Jane',
+                fromAdditional: true,
+            },
+            status: 'success',
+        })
+    })
 })

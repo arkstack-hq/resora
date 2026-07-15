@@ -46,6 +46,7 @@ export class GenericResource<
   private body: GenericBody<R> = { data: {} as any }
   private pendingData?: unknown
   private pendingDataCollected = false
+  private pendingAdditional: Record<string, any>[] = []
   private res?: Response
   public resource: R
   public collects?: typeof Resource<T>
@@ -313,6 +314,7 @@ export class GenericResource<
         rootKey
       ) as GenericBody<R>
       this.body = this.applySerializePlugins(this.body) as GenericBody<R>
+      this.applyPendingAdditional()
     }
 
     // if (this.collects) console.log(this.body, this.constructor.name, this.collects.name)
@@ -384,6 +386,7 @@ export class GenericResource<
         rootKey
       ) as GenericBody<R>
       this.body = this.applySerializePlugins(this.body) as GenericBody<R>
+      this.applyPendingAdditional()
     }
 
     return undefined
@@ -429,25 +432,34 @@ export class GenericResource<
   additional<X extends Record<string, any>>(extra: X) {
     this.called.additional = true
     this.json()
+    this.pendingAdditional.push({ ...extra })
 
-    const extraData = extra.data
-
-    delete extra.data
-    delete extra.pagination
-
-    const payloadKey = this.getPayloadKey()
-    if (extraData && payloadKey && typeof this.body[payloadKey] !== 'undefined') {
-      this.body[payloadKey] = Array.isArray(this.body[payloadKey])
-        ? [...this.body[payloadKey], ...extraData]
-        : { ...this.body[payloadKey], ...extraData }
-    }
-
-    this.body = {
-      ...this.body,
-      ...extra,
+    if (this.called.json) {
+      this.applyPendingAdditional()
     }
 
     return this
+  }
+
+  private applyPendingAdditional() {
+    for (const extra of this.pendingAdditional.splice(0)) {
+      const extraData = extra.data
+
+      delete extra.data
+      delete extra.pagination
+
+      const payloadKey = this.getPayloadKey()
+      if (extraData && payloadKey && typeof this.body[payloadKey] !== 'undefined') {
+        this.body[payloadKey] = Array.isArray(this.body[payloadKey])
+          ? [...this.body[payloadKey], ...extraData]
+          : { ...this.body[payloadKey], ...extraData }
+      }
+
+      this.body = {
+        ...this.body,
+        ...extra,
+      }
+    }
   }
 
   /**
