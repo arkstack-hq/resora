@@ -186,7 +186,7 @@ describe('Connect-style Requests (Express)', () => {
 
     it('should serialize nested collection instances in express responses', async () => {
         class FamilyMemberResource extends Resource {
-            data () {
+            data() {
                 return {
                     id: this.id,
                     fullName: `${this.firstName} ${this.lastName}`,
@@ -197,13 +197,13 @@ describe('Connect-style Requests (Express)', () => {
         class FamilyMemberCollection<R extends { id: number; firstName: string; lastName: string }[]> extends ResourceCollection<R> {
             collects = FamilyMemberResource
 
-            data () {
+            data() {
                 return this.toObject()
             }
         }
 
         class FamilyOverviewResource extends Resource {
-            data () {
+            data() {
                 return {
                     id: this.id,
                     familyName: this.familyName,
@@ -239,7 +239,7 @@ describe('Connect-style Requests (Express)', () => {
 
     it('should serialize nested collection toObject output in express responses', async () => {
         class FamilyMemberResource extends Resource {
-            data () {
+            data() {
                 return {
                     id: this.id,
                     fullName: `${this.firstName} ${this.lastName}`,
@@ -250,13 +250,13 @@ describe('Connect-style Requests (Express)', () => {
         class FamilyMemberCollection<R extends { id: number; firstName: string; lastName: string }[]> extends ResourceCollection<R> {
             collects = FamilyMemberResource
 
-            data () {
+            data() {
                 return this.toObject()
             }
         }
 
         class FamilyOverviewResource extends Resource {
-            data () {
+            data() {
                 return {
                     id: this.id,
                     familyName: this.familyName,
@@ -290,9 +290,52 @@ describe('Connect-style Requests (Express)', () => {
         })
     })
 
+    it('should support async resource data in express responses', async () => {
+        class ProfileResource extends Resource {
+            data() {
+                return {
+                    id: this.id,
+                    displayName: this.displayName,
+                }
+            }
+        }
+
+        class UserResource extends Resource {
+            async data() {
+                return {
+                    id: this.id,
+                    name: this.name,
+                    profile: new ProfileResource(this.profile),
+                }
+            }
+        }
+
+        app.get('/test', async (_, res) => {
+            return await new UserResource({
+                id: 1,
+                name: 'Jane',
+                profile: {
+                    id: 10,
+                    displayName: 'Jane Doe',
+                },
+            }, res)
+        })
+
+        await request(app).get('/test').expect({
+            data: {
+                id: 1,
+                name: 'Jane',
+                profile: {
+                    id: 10,
+                    displayName: 'Jane Doe',
+                },
+            },
+        })
+    })
+
     it('should allow class-level withResponse hook to customize headers/status/body', async () => {
         class CustomResource extends Resource {
-            withResponse (response: ServerResponse) {
+            withResponse(response: ServerResponse) {
                 response
                     .header('X-From-Hook', '1')
                     .setStatusCode(202)
@@ -326,7 +369,7 @@ describe('Connect-style Requests (Express)', () => {
             data: { id: number; name: string }[]
             pagination?: { currentPage: number; total: number }
         }> {
-            withResponse () {
+            withResponse() {
                 this.withResponseContext?.response.header('X-Collection-Hook', '1')
 
                 const body = this.getBody()

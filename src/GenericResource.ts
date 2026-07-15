@@ -23,7 +23,9 @@ import {
   getPaginationExtraKeys,
   isArkormLikeCollection,
   isArkormLikeModel,
+  isPromiseLike,
   normalizeSerializableData,
+  normalizeSerializableDataAsync,
   sanitizeConditionalAttributes,
   setRequestUrl,
   transformKeys,
@@ -130,15 +132,26 @@ export class GenericResource<
   /**
    * Get the original resource data
    */
-  data (_ctx?: unknown): R {
+  data(_ctx?: unknown): R {
     return this.resource
   }
 
   /**
    * Get the current serialized output body.
    */
-  getBody (): GenericBody<R> {
+  getBody(): GenericBody<R> {
     this.json()
+
+    return this.body
+  }
+
+  /**
+   * Asynchronously get the current serialized output body.
+   *
+   * @returns
+   */
+  async getBodyAsync(): Promise<GenericBody<R>> {
+    await this.jsonAsync()
 
     return this.body
   }
@@ -146,13 +159,13 @@ export class GenericResource<
   /**
    * Replace the current serialized output body.
    */
-  protected setBody (body: GenericBody<R>) {
+  protected setBody(body: GenericBody<R>) {
     this.body = body
 
     return this
   }
 
-  private resolveCollectsConfig (): ResourceLevelConfig | undefined {
+  private resolveCollectsConfig(): ResourceLevelConfig | undefined {
     const collectedResource = this.collects as typeof Resource | undefined
 
     if (!collectedResource) {
@@ -172,7 +185,7 @@ export class GenericResource<
     }
   }
 
-  private resolveResponseStructure () {
+  private resolveResponseStructure() {
     return this.resolveSerializerResponseStructure(
       this.constructor as typeof GenericResource,
       this.resolveCollectsConfig()
@@ -184,7 +197,7 @@ export class GenericResource<
    * 
    * @returns 
    */
-  protected resolveCurrentRootKey () {
+  protected resolveCurrentRootKey() {
     return this.resolveResponseStructure().rootKey
   }
 
@@ -194,7 +207,7 @@ export class GenericResource<
    * @param meta 
    * @param rootKey 
    */
-  protected applyMetaToBody (meta: MetaData, rootKey: string) {
+  protected applyMetaToBody(meta: MetaData, rootKey: string) {
     this.body = appendRootProperties(this.body, meta, rootKey) as GenericBody<R>
   }
 
@@ -203,15 +216,15 @@ export class GenericResource<
    * 
    * @returns 
    */
-  protected getResourceForMeta () {
+  protected getResourceForMeta() {
     return this.resource
   }
 
-  protected getSerializerType () {
+  protected getSerializerType() {
     return 'generic' as const
   }
 
-  private getPayloadKey () {
+  private getPayloadKey() {
     const { wrap, rootKey, factory } = this.resolveResponseStructure()
 
     return factory || !wrap ? undefined : rootKey
@@ -222,12 +235,18 @@ export class GenericResource<
    * 
    * @returns 
    */
-  json () {
+  json() {
     if (!this.called.json) {
       this.called.json = true
 
       const ctx = this.resolveSerializationContext()
       const resource = this.data(ctx)
+
+      if (isPromiseLike(resource)) {
+        this.called.json = false
+
+        return this
+      }
 
       let data: any = normalizeSerializableData(resource)
 
@@ -289,12 +308,78 @@ export class GenericResource<
     return this
   }
 
+  private async jsonAsync(): Promise<void> {
+    if (!this.called.json) {
+      this.called.json = true
+
+      const ctx = this.resolveSerializationContext()
+      const resource = await this.data(ctx)
+
+      let data: any = await normalizeSerializableDataAsync(resource)
+
+      if (Array.isArray(data) && this.collects) {
+        data = await Promise.all(data.map(async item => new this.collects!(item).data(ctx)))
+        data = await normalizeSerializableDataAsync(data)
+      }
+
+      if (!Array.isArray(data) && data && typeof data.data !== 'undefined') {
+        data = data.data
+      }
+
+      data = sanitizeConditionalAttributes(data)
+
+      const paginationExtras = buildPaginationExtras(this.resource)
+      const { metaKey } = getPaginationExtraKeys()
+      const configuredMeta = metaKey ? paginationExtras[metaKey] : undefined
+      if (metaKey) {
+        delete paginationExtras[metaKey]
+      }
+
+      const caseStyle = this.resolveSerializerCaseStyle(
+        this.constructor as typeof GenericResource,
+        this.resolveCollectsConfig()
+      )
+      if (caseStyle) {
+        const transformer = getCaseTransformer(caseStyle)
+        data = transformKeys(data, transformer)
+      }
+
+      const customMeta = this.resolveMergedMeta(GenericResource.prototype.with)
+
+      const { wrap, rootKey, factory } = this.resolveResponseStructure()
+      this.body = buildResponseEnvelope({
+        payload: data,
+        meta: configuredMeta,
+        metaKey,
+        wrap,
+        rootKey,
+        factory,
+        context: {
+          type: 'generic',
+          resource: this.resource,
+        },
+      }) as GenericBody<R>
+
+      this.body = appendRootProperties(
+        this.body,
+        {
+          ...paginationExtras,
+          ...(customMeta || {}),
+        },
+        rootKey
+      ) as GenericBody<R>
+      this.body = this.applySerializePlugins(this.body) as GenericBody<R>
+    }
+
+    return undefined
+  }
+
   /**
    * Convert resource to object format (for collections).
    *
    * @returns
    */
-  toObject () {
+  toObject() {
     this.called.toObject = true
     this.json()
 
@@ -314,7 +399,7 @@ export class GenericResource<
    * @alias toArray
    * @since 0.2.9
    */
-  toArray () {
+  toArray() {
     this.called.toArray = true
 
     return this.toObject()
@@ -326,7 +411,7 @@ export class GenericResource<
    * @param extra  Additional properties to merge into the response body
    * @returns 
    */
-  additional<X extends Record<string, any>> (extra: X) {
+  additional<X extends Record<string, any>>(extra: X) {
     this.called.additional = true
     this.json()
 
@@ -353,21 +438,22 @@ export class GenericResource<
   /**
    * Build a response object, optionally accepting a raw response to write to directly.
    */
-  response (): ServerResponse<GenericBody<R>>
+  response(): ServerResponse<GenericBody<R>>
   /**
    * Build a response object, writing to the provided raw response if possible.
    * 
    * @param res 
    */
-  response (res: H3Event['res']): ServerResponse<GenericBody<R>>
-  response (res: Response): ServerResponse<GenericBody<R>>
+  response(res: H3Event['res']): ServerResponse<GenericBody<R>>
+  response(res: Response): ServerResponse<GenericBody<R>>
+
   /**
    * Build a response object, writing to the provided raw response if possible.
    * 
    * @param res 
    * @returns 
    */
-  response (res?: Response | H3Event['res']): ServerResponse<GenericBody<R>> {
+  response(res?: Response | H3Event['res']): ServerResponse<GenericBody<R>> {
     const rawResponse = this.resolveRawResponse(res ?? this.res) as Response | H3Event['res']
 
     return this.runResponse({
@@ -394,7 +480,7 @@ export class GenericResource<
    *
    * Override in custom classes to mutate headers/status/body.
    */
-  withResponse (
+  withResponse(
     _response?: ServerResponse<GenericBody<R>>,
     _rawResponse?: Response | H3Event['res']
   ): any {
@@ -408,12 +494,14 @@ export class GenericResource<
    * @param onrejected  Callback to handle the rejected state of the promise, receiving the error reason
    * @returns A promise that resolves to the result of the onfulfilled or onrejected callback 
    */
-  then<TResult1 = GenericBody<R>, TResult2 = never> (
+  then<TResult1 = GenericBody<R>, TResult2 = never>(
     onfulfilled?: ((value: GenericBody<R>) => TResult1 | PromiseLike<TResult1>) | null,
     onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null,
   ): Promise<TResult1 | TResult2> {
     return this.runThen({
-      ensureJson: () => this.json(),
+      ensureJson: async () => {
+        await this.jsonAsync()
+      },
       body: () => this.body,
       rawResponse: this.resolveRawResponse(this.res) as Response | H3Event['res'],
       createServerResponse: (raw, body) => {
@@ -442,11 +530,13 @@ export class GenericResource<
    * @param onrejected
    * @returns
    */
-  catch<TResult = never> (
+  catch<TResult = never>(
     onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | null,
   ): Promise<GenericBody<R> | TResult> {
     return this.runThen({
-      ensureJson: () => this.json(),
+      ensureJson: async () => {
+        await this.jsonAsync()
+      },
       body: () => this.body,
       rawResponse: this.resolveRawResponse(this.res) as Response | H3Event['res'],
       createServerResponse: (raw, body) => {
@@ -474,9 +564,11 @@ export class GenericResource<
    * @param onfinally
    * @returns
    */
-  finally (onfinally?: (() => void) | null) {
+  finally(onfinally?: (() => void) | null) {
     return this.runThen({
-      ensureJson: () => this.json(),
+      ensureJson: async () => {
+        await this.jsonAsync()
+      },
       body: () => this.body,
       rawResponse: this.resolveRawResponse(this.res) as Response | H3Event['res'],
       createServerResponse: (raw, body) => {

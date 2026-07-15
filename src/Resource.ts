@@ -19,7 +19,9 @@ import {
   extractResponseFromCtx,
   getCaseTransformer,
   isArkormLikeModel,
+  isPromiseLike,
   normalizeSerializableData,
+  normalizeSerializableDataAsync,
   sanitizeConditionalAttributes,
   setRequestUrl,
   transformKeys,
@@ -111,22 +113,33 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
   static collection<
     C extends ResourceData[] | Collectible | CollectionLike | PaginatorLike = ResourceData[],
     T extends ResourceData = any
-  > (data: C) {
+  >(data: C) {
     return new ResourceCollection<C, T>(data).setCollects(this)
   }
 
   /**
    * Get the original resource data
    */
-  data (_ctx?: unknown) {
+  data(_ctx?: unknown) {
     return this.toObject()
   }
 
   /**
    * Get the current serialized output body.
    */
-  getBody (): ResourceBody<R> {
+  getBody(): ResourceBody<R> {
     this.json()
+
+    return this.body
+  }
+
+  /**
+   * Asynchronously get the current serialized output body.
+   *
+   * @returns
+   */
+  async getBodyAsync(): Promise<ResourceBody<R>> {
+    await this.jsonAsync()
 
     return this.body
   }
@@ -134,13 +147,13 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
   /**
    * Replace the current serialized output body.
    */
-  protected setBody (body: ResourceBody<R>) {
+  protected setBody(body: ResourceBody<R>) {
     this.body = body
 
     return this
   }
 
-  private resolveResponseStructure () {
+  private resolveResponseStructure() {
     return this.resolveSerializerResponseStructure(this.constructor as typeof Resource)
   }
 
@@ -149,23 +162,23 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
    * 
    * @returns 
    */
-  protected resolveCurrentRootKey () {
+  protected resolveCurrentRootKey() {
     return this.resolveResponseStructure().rootKey
   }
 
-  protected applyMetaToBody (meta: MetaData, rootKey: string) {
+  protected applyMetaToBody(meta: MetaData, rootKey: string) {
     this.body = appendRootProperties(this.body, meta, rootKey) as ResourceBody<R>
   }
 
-  protected getResourceForMeta () {
+  protected getResourceForMeta() {
     return this.resource
   }
 
-  protected getSerializerType () {
+  protected getSerializerType() {
     return 'resource' as const
   }
 
-  private getPayloadKey () {
+  private getPayloadKey() {
     const { wrap, rootKey, factory } = this.resolveResponseStructure()
 
     return factory || !wrap ? undefined : rootKey
@@ -176,12 +189,18 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
    * 
    * @returns 
    */
-  json () {
+  json() {
     if (!this.called.json) {
       this.called.json = true
 
       const ctx = this.resolveSerializationContext()
       const resource = this.data(ctx)
+
+      if (isPromiseLike(resource)) {
+        this.called.json = false
+
+        return this
+      }
 
       let data: any = normalizeSerializableData(resource)
 
@@ -219,12 +238,60 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
     return this
   }
 
+
+  /**
+   * Asynchronously convert resource to JSON response format
+   * 
+   * @returns 
+   */
+  private async jsonAsync(): Promise<void> {
+    if (!this.called.json) {
+      this.called.json = true
+
+      const ctx = this.resolveSerializationContext()
+      const resource = await this.data(ctx)
+
+      let data: any = await normalizeSerializableDataAsync(resource)
+
+      if (!Array.isArray(data) && data && typeof data.data !== 'undefined') {
+        data = data.data
+      }
+
+      data = sanitizeConditionalAttributes(data)
+
+      const caseStyle = this.resolveSerializerCaseStyle(this.constructor as typeof Resource)
+      if (caseStyle) {
+        const transformer = getCaseTransformer(caseStyle)
+        data = transformKeys(data, transformer)
+      }
+
+      const customMeta = this.resolveMergedMeta(Resource.prototype.with)
+
+      const { wrap, rootKey, factory } = this.resolveResponseStructure()
+      this.body = buildResponseEnvelope({
+        payload: data,
+        wrap,
+        rootKey,
+        factory,
+        context: {
+          type: 'resource',
+          resource: this.resource,
+        },
+      }) as ResourceBody<R>
+
+      this.body = appendRootProperties(this.body, customMeta, rootKey) as ResourceBody<R>
+      this.body = this.applySerializePlugins(this.body) as ResourceBody<R>
+    }
+
+    return undefined
+  }
+
   /**
    * Convert resource to object format (for collections) or return original data for single resources.
    *
    * @returns
    */
-  toObject (): R extends NonCollectible ? R['data'] : R {
+  toObject(): R extends NonCollectible ? R['data'] : R {
     this.called.toObject = true
     this.json()
 
@@ -244,7 +311,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
    * @alias toArray
    * @since 0.2.9
    */
-  toArray (): R extends NonCollectible ? R['data'] : R {
+  toArray(): R extends NonCollectible ? R['data'] : R {
     this.called.toArray = true
 
     return this.toObject()
@@ -256,7 +323,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
    * @param extra  Additional properties to merge into the response body
    * @returns 
    */
-  additional<X extends Record<string, any>> (extra: X) {
+  additional<X extends Record<string, any>>(extra: X) {
     this.called.additional = true
     this.json()
 
@@ -279,20 +346,20 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
   /**
    * Build a response object, optionally accepting a raw response to mutate in withResponse.
    */
-  response (): ServerResponse<ResourceBody<R>>
+  response(): ServerResponse<ResourceBody<R>>
   /**
    * Build a response object, optionally accepting a raw response to mutate in withResponse.
    * @param res Optional raw response object (e.g. Express Response or H3Event res)
    */
-  response (res: H3Event['res']): ServerResponse<ResourceBody<R>>
-  response (res: Response): ServerResponse<ResourceBody<R>>
+  response(res: H3Event['res']): ServerResponse<ResourceBody<R>>
+  response(res: Response): ServerResponse<ResourceBody<R>>
   /**
    * Build a response object, optionally accepting a raw response to mutate in withResponse.
    * 
    * @param res Optional raw response object (e.g. Express Response or H3Event res)
    * @returns 
    */
-  response (res?: H3Event['res'] | Response): ServerResponse<ResourceBody<R>> {
+  response(res?: H3Event['res'] | Response): ServerResponse<ResourceBody<R>> {
     const rawResponse = this.resolveRawResponse(res ?? this.res) as H3Event['res'] | Response
 
     return this.runResponse({
@@ -319,7 +386,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
    *
    * Override in custom classes to mutate headers/status/body.
    */
-  withResponse (
+  withResponse(
     _response?: ServerResponse<ResourceBody<R>>,
     _rawResponse?: Response | H3Event['res']
   ): any {
@@ -333,12 +400,14 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
    * @param onrejected  Callback to handle the rejected state of the promise, receiving the error reason
    * @returns A promise that resolves to the result of the onfulfilled or onrejected callback 
    */
-  then<TResult1 = ResourceBody<R>, TResult2 = never> (
+  then<TResult1 = ResourceBody<R>, TResult2 = never>(
     onfulfilled?: ((value: ResourceBody<R>) => TResult1 | PromiseLike<TResult1>) | null,
     onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null,
   ): Promise<TResult1 | TResult2> {
     return this.runThen({
-      ensureJson: () => this.json(),
+      ensureJson: async () => {
+        await this.jsonAsync()
+      },
       body: () => this.body,
       rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response,
       createServerResponse: (raw, body) => {
@@ -367,11 +436,13 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
    * @param onrejected 
    * @returns 
    */
-  catch<TResult = never> (
+  catch<TResult = never>(
     onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | null,
   ): Promise<ResourceBody<R> | TResult> {
     return this.runThen({
-      ensureJson: () => this.json(),
+      ensureJson: async () => {
+        await this.jsonAsync()
+      },
       body: () => this.body,
       rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response,
       createServerResponse: (raw, body) => {
@@ -399,9 +470,11 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
    * @param onfinally 
    * @returns 
    */
-  finally (onfinally?: (() => void) | null) {
+  finally(onfinally?: (() => void) | null) {
     return this.runThen({
-      ensureJson: () => this.json(),
+      ensureJson: async () => {
+        await this.jsonAsync()
+      },
       body: () => this.body,
       rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response,
       createServerResponse: (raw, body) => {

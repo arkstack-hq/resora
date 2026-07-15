@@ -13,9 +13,32 @@ type ArkormLikeCollection = {
 
 type ResoraCollectionLike = {
     toObject: () => unknown
+    toObjectAsync?: () => Promise<unknown>
     getBody: () => unknown
+    getBodyAsync?: () => Promise<unknown>
     json: () => unknown
     setCollects: (...args: unknown[]) => unknown
+}
+
+type ResoraSerializerLike = {
+    getBody: () => unknown
+    getBodyAsync?: () => Promise<unknown>
+    json: () => unknown
+    toObject: () => unknown
+}
+
+export const isPromiseLike = (value: unknown): value is PromiseLike<unknown> => {
+    return !!value
+        && (typeof value === 'object' || typeof value === 'function')
+        && typeof (value as PromiseLike<unknown>).then === 'function'
+}
+
+const unwrapNestedSerializerBody = (body: unknown) => {
+    if (isPlainObject(body) && 'data' in body) {
+        return body.data
+    }
+
+    return body
 }
 
 /**
@@ -72,6 +95,18 @@ export const isResoraCollectionLike = (value: unknown): value is ResoraCollectio
         && typeof candidate.setCollects === 'function'
 }
 
+export const isResoraSerializerLike = (value: unknown): value is ResoraSerializerLike => {
+    if (!value || typeof value !== 'object') {
+        return false
+    }
+
+    const candidate = value as Partial<ResoraSerializerLike>
+
+    return typeof candidate.toObject === 'function'
+        && typeof candidate.getBody === 'function'
+        && typeof candidate.json === 'function'
+}
+
 /**
  * Normalize a value for serialization by recursively converting Arkorm-like models and 
  * collections to plain objects, while preserving the structure of arrays and plain objects.
@@ -86,6 +121,10 @@ export const normalizeSerializableData = (value: unknown): unknown => {
 
     if (isResoraCollectionLike(value)) {
         return normalizeSerializableData(value.toObject())
+    }
+
+    if (isResoraSerializerLike(value)) {
+        return normalizeSerializableData(unwrapNestedSerializerBody(value.getBody()))
     }
 
     if (isArkormLikeModel(value)) {
@@ -111,4 +150,51 @@ export const normalizeSerializableData = (value: unknown): unknown => {
     }
 
     return value
+}
+
+export const normalizeSerializableDataAsync = async (value: unknown): Promise<unknown> => {
+    if (isResoraCollectionLike(value)) {
+        const object = typeof value.toObjectAsync === 'function'
+            ? await value.toObjectAsync()
+            : value.toObject()
+
+        return normalizeSerializableDataAsync(object)
+    }
+
+    if (isResoraSerializerLike(value)) {
+        const body = typeof value.getBodyAsync === 'function'
+            ? await value.getBodyAsync()
+            : value.getBody()
+
+        return normalizeSerializableDataAsync(unwrapNestedSerializerBody(body))
+    }
+
+    const awaitedValue = isPromiseLike(value)
+        ? await value
+        : value
+
+    if (Array.isArray(awaitedValue)) {
+        return Promise.all(awaitedValue.map(item => normalizeSerializableDataAsync(item)))
+    }
+
+    if (isArkormLikeModel(awaitedValue)) {
+        return normalizeSerializableDataAsync(awaitedValue.toObject())
+    }
+
+    if (isArkormLikeCollection(awaitedValue)) {
+        return normalizeSerializableDataAsync(awaitedValue.all())
+    }
+
+    if (isPlainObject(awaitedValue)) {
+        const entries = await Promise.all(
+            Object.entries(awaitedValue).map(async ([key, nestedValue]) => [
+                key,
+                await normalizeSerializableDataAsync(nestedValue),
+            ])
+        )
+
+        return Object.fromEntries(entries)
+    }
+
+    return awaitedValue
 }

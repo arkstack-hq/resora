@@ -21,7 +21,9 @@ import {
   getCaseTransformer,
   getPaginationExtraKeys,
   isArkormLikeCollection,
+  isPromiseLike,
   normalizeSerializableData,
+  normalizeSerializableDataAsync,
   sanitizeConditionalAttributes,
   setRequestUrl,
   transformKeys,
@@ -55,7 +57,7 @@ export class ResourceCollection<
    * @param value The value to check.
    * @returns     True if the value is a Collectible with pagination information, false otherwise.
    */
-  isPaginatedCollectible (value: unknown): value is Collectible {
+  isPaginatedCollectible(value: unknown): value is Collectible {
     if (!value || typeof value !== 'object') {
       return false
     }
@@ -94,7 +96,7 @@ export class ResourceCollection<
     }
   }
 
-  private getSourceData (): (
+  private getSourceData(): (
     R extends Collectible
     ? R['data'][number]
     : R extends PaginatorLike<infer TPaginatorData>
@@ -114,7 +116,7 @@ export class ResourceCollection<
     ) as never
   }
 
-  private resolveObjectData (ctx?: unknown) {
+  private resolveObjectData(ctx?: unknown) {
     let data = this.getSourceData() as ResourceData[]
 
     if (this.collects) {
@@ -137,15 +139,21 @@ export class ResourceCollection<
   /**
    * Get the original resource data
    */
-  data (_ctx?: unknown) {
+  data(_ctx?: unknown) {
     return this.getSourceData()
   }
 
   /**
    * Get the current serialized output body.
    */
-  getBody (): CollectionBody<R> {
+  getBody(): CollectionBody<R> {
     this.json()
+
+    return this.body
+  }
+
+  async getBodyAsync(): Promise<CollectionBody<R>> {
+    await this.jsonAsync()
 
     return this.body
   }
@@ -153,13 +161,13 @@ export class ResourceCollection<
   /**
    * Replace the current serialized output body.
    */
-  protected setBody (body: CollectionBody<R>) {
+  protected setBody(body: CollectionBody<R>) {
     this.body = body
 
     return this
   }
 
-  private resolveCollectsConfig (): ResourceLevelConfig | undefined {
+  private resolveCollectsConfig(): ResourceLevelConfig | undefined {
     const collectedResource = this.collects as typeof Resource | undefined
 
     if (!collectedResource) {
@@ -179,7 +187,7 @@ export class ResourceCollection<
     }
   }
 
-  private resolveResponseStructure () {
+  private resolveResponseStructure() {
     return this.resolveSerializerResponseStructure(
       this.constructor as typeof ResourceCollection,
       this.resolveCollectsConfig()
@@ -191,7 +199,7 @@ export class ResourceCollection<
    * 
    * @returns 
    */
-  protected resolveCurrentRootKey () {
+  protected resolveCurrentRootKey() {
     return this.resolveResponseStructure().rootKey
   }
 
@@ -202,7 +210,7 @@ export class ResourceCollection<
    * @param meta 
    * @param rootKey 
    */
-  protected applyMetaToBody (meta: MetaData, rootKey: string) {
+  protected applyMetaToBody(meta: MetaData, rootKey: string) {
     this.body = appendRootProperties(this.body, meta, rootKey) as CollectionBody<R>
   }
 
@@ -212,11 +220,11 @@ export class ResourceCollection<
    * 
    * @returns 
    */
-  protected getResourceForMeta () {
+  protected getResourceForMeta() {
     return this.resource
   }
 
-  protected getSerializerType () {
+  protected getSerializerType() {
     return 'collection' as const
   }
 
@@ -226,7 +234,7 @@ export class ResourceCollection<
    * 
    * @returns The key to use for the response payload, or undefined if no key is needed.
    */
-  private getPayloadKey () {
+  private getPayloadKey() {
     const { wrap, rootKey, factory } = this.resolveResponseStructure()
 
     return factory || !wrap ? undefined : rootKey
@@ -237,12 +245,18 @@ export class ResourceCollection<
    * 
    * @returns 
    */
-  json () {
+  json() {
     if (!this.called.json) {
       this.called.json = true
 
       const ctx = this.resolveSerializationContext()
       let data: ResourceData[] = this.data(ctx) as never
+
+      if (isPromiseLike(data)) {
+        this.called.json = false
+
+        return this
+      }
 
       if (this.collects && this.data === ResourceCollection.prototype.data) {
         data = data.map((item: any) => new this.collects!(item).data(ctx))
@@ -303,11 +317,80 @@ export class ResourceCollection<
   }
 
   /**
+   * Asynchronously convert resource to JSON response format
+   * 
+   * @returns 
+   */
+  private async jsonAsync(): Promise<void> {
+    if (!this.called.json) {
+      this.called.json = true
+
+      const ctx = this.resolveSerializationContext()
+      let data: ResourceData[] = await this.data(ctx) as never
+
+      if (this.collects && this.data === ResourceCollection.prototype.data) {
+        data = await Promise.all(data.map(async (item: any) => new this.collects!(item).data(ctx))) as ResourceData[]
+      }
+
+      data = await normalizeSerializableDataAsync(data) as ResourceData[]
+
+      data = sanitizeConditionalAttributes(data) as ResourceData[]
+
+      const paginationExtras = !Array.isArray(this.resource)
+        ? buildPaginationExtras(this.resource)
+        : {}
+
+      const { metaKey } = getPaginationExtraKeys()
+      const configuredMeta = metaKey ? paginationExtras[metaKey] : undefined
+      if (metaKey) {
+        delete paginationExtras[metaKey]
+      }
+
+      const caseStyle = this.resolveSerializerCaseStyle(
+        this.constructor as typeof ResourceCollection,
+        this.resolveCollectsConfig()
+      )
+      if (caseStyle) {
+        const transformer = getCaseTransformer(caseStyle)
+        data = transformKeys(data, transformer) as CollectionBody<R>['data']
+      }
+
+      const customMeta = this.resolveMergedMeta(ResourceCollection.prototype.with)
+
+      const { wrap, rootKey, factory } = this.resolveResponseStructure()
+      this.body = buildResponseEnvelope({
+        payload: data,
+        meta: configuredMeta,
+        metaKey,
+        wrap,
+        rootKey,
+        factory,
+        context: {
+          type: 'collection',
+          resource: this.resource,
+        },
+      }) as CollectionBody<R>
+
+      this.body = appendRootProperties(
+        this.body,
+        {
+          ...paginationExtras,
+          ...(customMeta || {}),
+        },
+        rootKey
+      ) as CollectionBody<R>
+      this.body = this.applySerializePlugins(this.body) as CollectionBody<R>
+    }
+
+    return undefined
+  }
+
+  /**
    * Convert resource to object format and return original data.
    *
    * @returns
    */
-  toObject (): (
+  toObject(): (
     R extends Collectible
     ? R['data'][number]
     : R extends PaginatorLike<infer TPaginatorData>
@@ -324,13 +407,41 @@ export class ResourceCollection<
   }
 
   /**
+   * Asynchronously convert resource to object format and return original data.
+   *
+   * @returns
+   */
+  async toObjectAsync(): Promise<(
+    R extends Collectible
+    ? R['data'][number]
+    : R extends PaginatorLike<infer TPaginatorData>
+    ? TPaginatorData
+    : R extends CollectionLike<infer TCollectionData>
+    ? TCollectionData
+    : R extends ResourceData[]
+    ? R[number]
+    : never
+  )[]> {
+    this.called.toObject = true
+
+    const ctx = this.resolveSerializationContext()
+    let data = this.getSourceData() as ResourceData[]
+
+    if (this.collects) {
+      data = await Promise.all(data.map(async (item: any) => new this.collects!(item).data(ctx))) as ResourceData[]
+    }
+
+    return await normalizeSerializableDataAsync(data) as never
+  }
+
+  /**
    * Convert resource to object format and return original data.
    * 
    * @deprecated Use toObject() instead.
    * @alias toArray
    * @since 0.2.9
    */
-  toArray (): (
+  toArray(): (
     R extends Collectible
     ? R['data'][number]
     : R extends PaginatorLike<infer TPaginatorData>
@@ -352,7 +463,7 @@ export class ResourceCollection<
    * @param extra  Additional properties to merge into the response body
    * @returns 
    */
-  additional<X extends Record<string, any>> (extra: X) {
+  additional<X extends Record<string, any>>(extra: X) {
     this.called.additional = true
     this.json()
 
@@ -376,20 +487,20 @@ export class ResourceCollection<
   /**
    * Build a response object, optionally accepting a raw response to mutate in withResponse.
    */
-  response (): ServerResponse<CollectionBody<R>>
+  response(): ServerResponse<CollectionBody<R>>
   /**
    * Build a response object, optionally accepting a raw response to mutate in withResponse.
    * @param res Optional raw response object (e.g. Express Response or H3Event res)
    */
-  response (res: H3Event['res']): ServerResponse<CollectionBody<R>>
-  response (res: Response): ServerResponse<CollectionBody<R>>
+  response(res: H3Event['res']): ServerResponse<CollectionBody<R>>
+  response(res: Response): ServerResponse<CollectionBody<R>>
   /**
    * Build a response object, optionally accepting a raw response to mutate in withResponse.
    * 
    * @param res Optional raw response object (e.g. Express Response or H3Event res)
    * @returns 
    */
-  response (res?: H3Event['res'] | Response): ServerResponse<CollectionBody<R>> {
+  response(res?: H3Event['res'] | Response): ServerResponse<CollectionBody<R>> {
     const rawResponse = this.resolveRawResponse(res ?? this.res) as H3Event['res'] | Response
 
     return this.runResponse({
@@ -416,14 +527,14 @@ export class ResourceCollection<
    *
    * Override in custom classes to mutate headers/status/body.
    */
-  withResponse (
+  withResponse(
     _response?: ServerResponse<CollectionBody<R>>,
     _rawResponse?: Response | H3Event['res']
   ): any {
     return this
   }
 
-  setCollects (collects: typeof Resource<T>) {
+  setCollects(collects: typeof Resource<T>) {
     this.collects = collects
 
     return this
@@ -436,12 +547,14 @@ export class ResourceCollection<
    * @param onrejected  Callback to handle the rejected state of the promise
    * @returns A promise that resolves to the result of the onfulfilled or onrejected callback 
    */
-  then<TResult1 = CollectionBody<R>, TResult2 = never> (
+  then<TResult1 = CollectionBody<R>, TResult2 = never>(
     onfulfilled?: ((value: CollectionBody<R>) => TResult1 | PromiseLike<TResult1>) | null,
     onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null,
   ): Promise<TResult1 | TResult2> {
     return this.runThen({
-      ensureJson: () => this.json(),
+      ensureJson: async () => {
+        await this.jsonAsync()
+      },
       body: () => this.body,
       rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response,
       createServerResponse: (raw, body) => {
@@ -470,11 +583,13 @@ export class ResourceCollection<
    * @param onrejected 
    * @returns 
    */
-  catch<TResult = never> (
+  catch<TResult = never>(
     onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | null,
   ): Promise<CollectionBody<R> | TResult> {
     return this.runThen({
-      ensureJson: () => this.json(),
+      ensureJson: async () => {
+        await this.jsonAsync()
+      },
       body: () => this.body,
       rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response,
       createServerResponse: (raw, body) => {
@@ -502,9 +617,11 @@ export class ResourceCollection<
    * @param onfinally 
    * @returns 
    */
-  finally (onfinally?: (() => void) | null) {
+  finally(onfinally?: (() => void) | null) {
     return this.runThen({
-      ensureJson: () => this.json(),
+      ensureJson: async () => {
+        await this.jsonAsync()
+      },
       body: () => this.body,
       rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response,
       createServerResponse: (raw, body) => {
