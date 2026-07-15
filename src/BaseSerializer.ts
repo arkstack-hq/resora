@@ -313,8 +313,8 @@ export abstract class BaseSerializer<TResource = any> {
      * @param input 
      * @returns 
      */
-    protected runThen<TBody, TRawResponse, TServerResponse, TResult1, TResult2> (input: {
-        ensureJson: () => void
+    protected async runThen<TBody, TRawResponse, TServerResponse, TResult1, TResult2> (input: {
+        ensureJson: () => void | Promise<void>
         body: () => TBody
         rawResponse?: TRawResponse
         createServerResponse: (raw: TRawResponse, body: TBody) => TServerResponse
@@ -324,7 +324,7 @@ export abstract class BaseSerializer<TResource = any> {
         onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null
     }) {
         this.called.then = true
-        input.ensureJson()
+        await input.ensureJson()
 
         const initialBody = input.body()
         let response: TServerResponse | undefined
