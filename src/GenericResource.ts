@@ -23,9 +23,9 @@ import {
   getPaginationExtraKeys,
   isArkormLikeCollection,
   isArkormLikeModel,
-  isPromiseLike,
   normalizeSerializableData,
   normalizeSerializableDataAsync,
+  requiresAsyncNormalization,
   sanitizeConditionalAttributes,
   setRequestUrl,
   transformKeys,
@@ -44,6 +44,8 @@ export class GenericResource<
 > extends BaseSerializer<R> {
   [key: string]: any;
   private body: GenericBody<R> = { data: {} as any }
+  private pendingData?: unknown
+  private pendingDataCollected = false
   private res?: Response
   public resource: R
   public collects?: typeof Resource<T>
@@ -242,7 +244,8 @@ export class GenericResource<
       const ctx = this.resolveSerializationContext()
       const resource = this.data(ctx)
 
-      if (isPromiseLike(resource)) {
+      if (requiresAsyncNormalization(resource)) {
+        this.pendingData = resource
         this.called.json = false
 
         return this
@@ -252,6 +255,14 @@ export class GenericResource<
 
       if (Array.isArray(data) && this.collects) {
         data = data.map(item => new this.collects!(item).data(ctx))
+      }
+
+      if (requiresAsyncNormalization(data)) {
+        this.pendingData = data
+        this.pendingDataCollected = true
+        this.called.json = false
+
+        return this
       }
 
       if (!Array.isArray(data) && data && typeof data.data !== 'undefined') {
@@ -313,11 +324,15 @@ export class GenericResource<
       this.called.json = true
 
       const ctx = this.resolveSerializationContext()
-      const resource = await this.data(ctx)
+      const hasPendingData = typeof this.pendingData !== 'undefined'
+      const pendingDataCollected = this.pendingDataCollected
+      const resource = hasPendingData ? this.pendingData : this.data(ctx)
+      this.pendingData = undefined
+      this.pendingDataCollected = false
 
       let data: any = await normalizeSerializableDataAsync(resource)
 
-      if (Array.isArray(data) && this.collects) {
+      if (Array.isArray(data) && this.collects && !pendingDataCollected) {
         data = await Promise.all(data.map(async item => new this.collects!(item).data(ctx)))
         data = await normalizeSerializableDataAsync(data)
       }
@@ -458,6 +473,7 @@ export class GenericResource<
 
     return this.runResponse({
       ensureJson: () => this.json(),
+      ensureJsonAsync: () => this.jsonAsync(),
       rawResponse,
       body: () => this.body,
       createServerResponse: (raw, body) => {

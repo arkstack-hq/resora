@@ -28,6 +28,7 @@ export class ServerResponse<
     private _status: number = 200
     private sent = false
     private prepared = false
+    private bodyResolver?: () => R | PromiseLike<R>
     headers: Record<string, string> = {}
 
     constructor(response: H3Event['res'], body: R)
@@ -41,7 +42,7 @@ export class ServerResponse<
      * @param status 
      * @returns The current ServerResponse instance
      */
-    setStatusCode (status: number) {
+    setStatusCode(status: number) {
         this._status = status
         this.prepared = false
 
@@ -54,9 +55,21 @@ export class ServerResponse<
      * @param body
      * @returns The current ServerResponse instance
      */
-    setBody (body: R) {
+    setBody(body: R) {
         this.body = body
         this.prepared = false
+
+        return this
+    }
+
+    /**
+     * Defer resolving the response body until the response is dispatched.
+     *
+     * @param resolver
+     * @returns
+     */
+    setBodyResolver(resolver: () => R | PromiseLike<R>) {
+        this.bodyResolver = resolver
 
         return this
     }
@@ -66,7 +79,7 @@ export class ServerResponse<
      * 
      * @returns 
      */
-    status () {
+    status() {
         return this._status
     }
 
@@ -75,7 +88,7 @@ export class ServerResponse<
      * 
      * @returns 
      */
-    statusText () {
+    statusText() {
         if (this.response && 'statusMessage' in this.response) {
             return this.response.statusMessage
         } else if (this.response && 'statusText' in this.response) {
@@ -93,7 +106,7 @@ export class ServerResponse<
      * @param options Optional cookie attributes (e.g., path, domain, maxAge)
      * @returns The current ServerResponse instance
      */
-    setCookie (name: string, value: string, options?: Record<string, any>) {
+    setCookie(name: string, value: string, options?: Record<string, any>) {
         this.#addHeader(
             'Set-Cookie',
             `${name}=${value}; ${Object.entries(options || {}).map(([key, val]) => `${key}=${val}`).join('; ')}`
@@ -108,7 +121,7 @@ export class ServerResponse<
      * @param headers Optional headers to add to the response
      * @returns The current ServerResponse instance
      */
-    setHeaders (headers: Record<string, string>) {
+    setHeaders(headers: Record<string, string>) {
         for (const [key, value] of Object.entries(headers)) {
             this.#addHeader(key, value)
         }
@@ -123,7 +136,7 @@ export class ServerResponse<
      * @param value The value of the header
      * @returns The current ServerResponse instance
      */
-    header (key: string, value: string) {
+    header(key: string, value: string) {
         this.#addHeader(key, value)
 
         return this
@@ -135,7 +148,7 @@ export class ServerResponse<
      * @param key The name of the header
      * @param value The value of the header
      */
-    #addHeader (key: string, value: string) {
+    #addHeader(key: string, value: string) {
         this.headers[key] = value
         this.prepared = false
 
@@ -161,7 +174,7 @@ export class ServerResponse<
      * This is the preferred integration boundary for frameworks that own their
      * response lifecycle. The returned object is deliberately not thenable.
      */
-    toResponseData (): ServerResponseData<R> {
+    toResponseData(): ServerResponseData<R> {
         this.#prepare()
 
         const statusText = this.statusText()
@@ -182,9 +195,16 @@ export class ServerResponse<
      * @param body Optional body override
      * @returns The dispatched response body
      */
-    send (body?: R) {
+    send(body?: R): R | Promise<R> {
         if (this.sent || this.#rawResponseSent()) {
             return this.body
+        }
+
+        if (typeof body === 'undefined' && this.bodyResolver) {
+            const resolver = this.bodyResolver
+            this.bodyResolver = undefined
+
+            return Promise.resolve(resolver()).then(resolvedBody => this.send(resolvedBody))
         }
 
         if (typeof body !== 'undefined') {
@@ -238,7 +258,7 @@ export class ServerResponse<
         return this.body
     }
 
-    #prepare () {
+    #prepare() {
         if (this.prepared) {
             return
         }
@@ -261,7 +281,7 @@ export class ServerResponse<
         this.prepared = true
     }
 
-    #runAfterSend () {
+    #runAfterSend() {
         runPluginHook('afterSend', {
             response: this,
             rawResponse: this.response,
@@ -273,7 +293,7 @@ export class ServerResponse<
         })
     }
 
-    #rawResponseSent () {
+    #rawResponseSent() {
         const raw = this.response as any
 
         return Boolean(raw?.headersSent || raw?.sent || raw?.raw?.headersSent)
@@ -286,7 +306,7 @@ export class ServerResponse<
      * @param onrejected  Callback to handle the rejected state of the promise, receiving the error reason
      * @returns A promise that resolves to the result of the onfulfilled or onrejected callback 
      */
-    then<TResult1 = R, TResult2 = never> (
+    then<TResult1 = R, TResult2 = never>(
         onfulfilled?: ((value: R) => TResult1 | PromiseLike<TResult1>) | null,
         onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null,
     ): Promise<TResult1 | TResult2> {
@@ -301,7 +321,7 @@ export class ServerResponse<
      * @param onrejected 
      * @returns 
      */
-    catch<TResult = never> (
+    catch<TResult = never>(
         onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | null,
     ): Promise<R | TResult> {
         return this.then(undefined, onrejected)
@@ -313,7 +333,7 @@ export class ServerResponse<
      * @param onfinally 
      * @returns 
      */
-    finally (onfinally?: (() => void) | null) {
+    finally(onfinally?: (() => void) | null) {
         return this.then(onfinally, onfinally)
     }
 

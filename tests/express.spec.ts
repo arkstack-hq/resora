@@ -1,3 +1,4 @@
+import { ArkormCollection, Model } from 'arkormx'
 import { Resource, ServerResponse } from 'src'
 import { beforeEach, describe, expect, it } from 'vitest'
 
@@ -291,12 +292,38 @@ describe('Connect-style Requests (Express)', () => {
     })
 
     it('should support async resource data in express responses', async () => {
+        class ProfileModel extends Model<{ id: number, displayName: string }> {
+        }
+
+        const models = new ArkormCollection<ProfileModel>([
+            new ProfileModel({ id: 1, displayName: 'A' }),
+            new ProfileModel({ id: 2, displayName: 'B' }),
+        ])
+
+
+        class AsyncProfileResource extends Resource {
+            async data() {
+                return {
+                    id: this.id,
+                    displayName: this.displayName,
+                }
+            }
+        }
+
         class ProfileResource extends Resource {
             data() {
                 return {
                     id: this.id,
                     displayName: this.displayName,
                 }
+            }
+        }
+
+        class ProfileCollection extends ResourceCollection {
+            collects = AsyncProfileResource
+
+            data() {
+                return this.toObject()
             }
         }
 
@@ -318,10 +345,14 @@ describe('Connect-style Requests (Express)', () => {
                     id: 10,
                     displayName: 'Jane Doe',
                 },
-            }, res)
+            }, res).response().setStatusCode(202)
         })
 
-        await request(app).get('/test').expect({
+        app.get('/all/test', async (_, res) => {
+            return await new ProfileCollection(models, res).response().setStatusCode(202)
+        })
+
+        await request(app).get('/test').expect(202).expect({
             data: {
                 id: 1,
                 name: 'Jane',
@@ -330,6 +361,10 @@ describe('Connect-style Requests (Express)', () => {
                     displayName: 'Jane Doe',
                 },
             },
+        })
+
+        await request(app).get('/all/test').expect(202).expect({
+            data: models.all(),
         })
     })
 

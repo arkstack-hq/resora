@@ -21,9 +21,9 @@ import {
   getCaseTransformer,
   getPaginationExtraKeys,
   isArkormLikeCollection,
-  isPromiseLike,
   normalizeSerializableData,
   normalizeSerializableDataAsync,
+  requiresAsyncNormalization,
   sanitizeConditionalAttributes,
   setRequestUrl,
   transformKeys,
@@ -43,6 +43,8 @@ export class ResourceCollection<
 > extends BaseSerializer<R> {
   [key: string]: any;
   private body: CollectionBody<R> = { data: [] as any }
+  private pendingData?: unknown
+  private pendingDataCollected = false
   private res?: Response
   public resource: R
   public collects?: typeof Resource<T>
@@ -252,7 +254,8 @@ export class ResourceCollection<
       const ctx = this.resolveSerializationContext()
       let data: ResourceData[] = this.data(ctx) as never
 
-      if (isPromiseLike(data)) {
+      if (requiresAsyncNormalization(data)) {
+        this.pendingData = data
         this.called.json = false
 
         return this
@@ -260,6 +263,14 @@ export class ResourceCollection<
 
       if (this.collects && this.data === ResourceCollection.prototype.data) {
         data = data.map((item: any) => new this.collects!(item).data(ctx))
+      }
+
+      if (requiresAsyncNormalization(data)) {
+        this.pendingData = data
+        this.pendingDataCollected = true
+        this.called.json = false
+
+        return this
       }
 
       data = normalizeSerializableData(data) as ResourceData[]
@@ -326,9 +337,13 @@ export class ResourceCollection<
       this.called.json = true
 
       const ctx = this.resolveSerializationContext()
-      let data: ResourceData[] = await this.data(ctx) as never
+      const hasPendingData = typeof this.pendingData !== 'undefined'
+      const pendingDataCollected = this.pendingDataCollected
+      let data: ResourceData[] = (hasPendingData ? this.pendingData : await this.data(ctx)) as never
+      this.pendingData = undefined
+      this.pendingDataCollected = false
 
-      if (this.collects && this.data === ResourceCollection.prototype.data) {
+      if (this.collects && this.data === ResourceCollection.prototype.data && !pendingDataCollected) {
         data = await Promise.all(data.map(async (item: any) => new this.collects!(item).data(ctx))) as ResourceData[]
       }
 
@@ -505,6 +520,7 @@ export class ResourceCollection<
 
     return this.runResponse({
       ensureJson: () => this.json(),
+      ensureJsonAsync: () => this.jsonAsync(),
       rawResponse,
       body: () => this.body,
       createServerResponse: (raw, body) => {

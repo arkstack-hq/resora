@@ -120,6 +120,13 @@ export abstract class BaseSerializer<TResource = any> {
     protected abstract setBody (body: any): this
 
     /**
+     * Report whether a synchronous serialization pass encountered async data.
+     */
+    isSerializationPending (): boolean {
+        return this.called.json === false
+    }
+
+    /**
      * Apply registered plugins for the serialization process, allowing plugins to 
      * modify the response body and metadata before the response is sent.
      * 
@@ -279,6 +286,7 @@ export abstract class BaseSerializer<TResource = any> {
      */
     protected runResponse<TBody, TRawResponse, TServerResponse> (input: {
         ensureJson: () => void
+        ensureJsonAsync?: () => Promise<void>
         rawResponse: TRawResponse
         body: () => TBody
         createServerResponse: (raw: TRawResponse, body: TBody) => TServerResponse
@@ -287,21 +295,31 @@ export abstract class BaseSerializer<TResource = any> {
         this.called.toResponse = true
         input.ensureJson()
 
-        const resolvedBody = input.body()
-        const response = input.createServerResponse(input.rawResponse, resolvedBody)
+        const response = input.createServerResponse(input.rawResponse, input.body())
+        const finalizeResponse = () => {
+            this.called.withResponse = true
+            input.callWithResponse(response, input.rawResponse)
 
-        this.called.withResponse = true
-        input.callWithResponse(response, input.rawResponse)
+            if (typeof (response as any)?.setBody === 'function') {
+                (response as any).setBody(input.body())
+            }
 
-        if (typeof (response as any)?.setBody === 'function') {
-            (response as any).setBody(input.body())
+            return this.applyResponsePlugins({
+                body: input.body(),
+                rawResponse: input.rawResponse,
+                response,
+            })
         }
 
-        this.applyResponsePlugins({
-            body: input.body(),
-            rawResponse: input.rawResponse,
-            response,
-        })
+        if (!this.called.json && input.ensureJsonAsync && typeof (response as any)?.setBodyResolver === 'function') {
+            (response as any).setBodyResolver(async () => {
+                await input.ensureJsonAsync!()
+
+                return finalizeResponse()
+            })
+        } else {
+            finalizeResponse()
+        }
 
         return response
     }
