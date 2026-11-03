@@ -18,6 +18,28 @@ yarn add resora
 
 :::
 
+### CLI (optional)
+
+The `resora` CLI (`resora init`, `resora create:resource`, ...) is built on [`@h3ravel/musket`](https://www.npmjs.com/package/@h3ravel/musket), which is an optional peer dependency. Install it only if you want to use the CLI:
+
+::: code-group
+
+```bash [npm]
+npm install -D @h3ravel/musket
+```
+
+```bash [pnpm]
+pnpm add -D @h3ravel/musket
+```
+
+```bash [yarn]
+yarn add -D @h3ravel/musket
+```
+
+:::
+
+The CLI classes (`CliApp`, `MakeResource`, `InitCommand`) are exported from `resora/cli`, so importing `resora` itself never loads musket.
+
 ## Basic Usage
 
 Resora provides two primary primitives:

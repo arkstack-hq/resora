@@ -1,4 +1,3 @@
-import type { Command } from '@h3ravel/musket'
 import { CaseStyle, ResponseStructureConfig } from './common'
 
 export interface Config {
@@ -108,7 +107,7 @@ export interface Config {
     /**
      * @description An optional array of additional command classes to be registered with the framework. Each command class should extend the base Command class provided by the '@h3ravel/musket' package. This allows users to easily add custom commands to their application by including them in this array when defining the configuration.
      */
-    extraCommands?: typeof Command<any>[]
+    extraCommands?: (new (...args: any[]) => any)[]
 }
 
 /**
