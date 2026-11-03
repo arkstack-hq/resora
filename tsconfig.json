@@ -16,6 +16,7 @@
       "src": ["./src/index.ts"],
       "src/*": ["./src/*"],
       "resora": ["./src/index.ts"],
+      "resora/cli": ["./src/cli/exports.ts"],
       "@resora/plugin-clear-router": [
         "./packages/plugin-clear-router/src/index.ts"
       ]

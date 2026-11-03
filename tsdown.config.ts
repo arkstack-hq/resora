@@ -5,7 +5,10 @@ export default defineConfig([
         exports: true,
         minify: false,
         tsconfig: 'tsconfig.json',
-        entry: ['src/index.ts'],
+        entry: {
+            index: 'src/index.ts',
+            cli: 'src/cli/exports.ts',
+        },
         platform: 'node',
         outDir: 'dist',
         format: ['esm', 'cjs'],
