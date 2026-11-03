@@ -16,7 +16,7 @@ export default defineConfig({
 });
 ```
 
-For simplicity, Resora ships a CLI tool to help with repetitive tasks. To initialize a config file with safe defaults, run the following command in your project root:
+For simplicity, Resora ships a CLI tool to help with repetitive tasks. To initialize a config file with safe defaults, run the following command in your project root (the CLI needs the optional `@h3ravel/musket` package, see [Getting Started](./getting-started.md#cli-optional)):
 
 ::: code-group
 
