@@ -16,6 +16,11 @@ The format follows semantic versioning principles.
 - Added direct support for Arkormˣ paginated results (`LengthAwarePaginator` and `Paginator`) across `ResourceCollection` and `GenericResource` flows.
 
 - Added direct support for Arkormˣ Models and Collections across `ResourceCollection` and `GenericResource` flows.
+- Added direct support for Fastify replies in `withResponse()`, `.response()`, and `ServerResponse`, including clear-router's `{ req, reply }` context.
+
+### Fixed
+
+- `clearRouterFastifyPlugin` returns the sent reply to Fastify, so Fastify no longer warns that the reply was already sent.
 
 ### Documentation
 
@@ -27,7 +32,7 @@ The format follows semantic versioning principles.
 ### Planned
 
 - Plugin System for lifecycle extension without core modification
-- Direct support for Next.Js API, Nest.JS, and Fastify response objects in `withResponse()`, `.response()`, and `ServerResponse` class.
+- Direct support for Next.Js API and Nest.JS response objects in `withResponse()`, `.response()`, and `ServerResponse` class.
 - Built-in support for Arkormˣ models for seamless transformation of Arkormˣ entities.
 
 ## [0.2.1] - [0.2.2] - Patch Release Series

@@ -84,9 +84,19 @@ Add conditional transformation helpers:
 
 ✅ Implemented
 
-## NextJs API, NestJS and Fastify Support
+## Fastify Support
 
-Add direct support for NextJs API, NestJS, and Fastify response objects in:
+Direct support for Fastify replies in:
+
+- `withResponse()` hooks
+- `.response()` dispatch flow
+- `ServerResponse` adapter handling
+
+✅ Implemented
+
+## NextJs API and NestJS Support
+
+Add direct support for NextJs API and NestJS response objects in:
 
 - `withResponse()` hooks
 - `.response()` dispatch flow

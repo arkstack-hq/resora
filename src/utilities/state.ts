@@ -384,6 +384,11 @@ export const extractResponseFromCtx = (ctx: unknown): any | undefined => {
         return obj.res
     }
 
+    // Fastify context ({ req, reply } from clear-router)
+    if (obj.reply && typeof obj.reply === 'object') {
+        return obj.reply
+    }
+
     // Bare response object passed directly
     return ctx
 }

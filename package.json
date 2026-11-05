@@ -75,6 +75,7 @@
     "barrelize": "^1.7.3",
     "eslint": "^10.0.0",
     "express": "^5.1.0",
+    "fastify": "^5.8.5",
     "h3": "2.0.1-rc.14",
     "parasito": "^0.1.6",
     "tsdown": "^0.22.14",

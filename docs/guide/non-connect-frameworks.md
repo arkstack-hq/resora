@@ -1,4 +1,4 @@
-# Using Resora Outside H3/Express (Non-Connect Frameworks)
+# Using Resora Outside H3/Express/Fastify (Non-Connect Frameworks)
 
 Resora works as a pure transformation layer, even when your framework does **not** expose a Connect-style response object.
 
@@ -51,7 +51,11 @@ Resora separates:
 
 When Connect-style response objects are unavailable, keep transport in your framework and use Resora for transformation only.
 
-## Fastify Example (Current Recommended Pattern)
+## Fastify
+
+Resora dispatches through a Fastify `reply` directly. Pass the reply to the
+resource (or to `.response()`), then return the reply so Fastify knows the
+response has been sent:
 
 ```ts
 import { Resource } from 'resora';
@@ -59,9 +63,25 @@ import { Resource } from 'resora';
 fastify.get('/users/:id', async (request, reply) => {
   const user = await findUser(request.params.id);
 
-  const body = new Resource(user).withMeta({ traceId: request.id }).getBody();
+  await new Resource(user, reply)
+    .withMeta({ traceId: request.id })
+    .response()
+    .setStatusCode(200)
+    .header('X-Resource', 'user');
 
-  return reply.code(200).send(body);
+  return reply;
+});
+```
+
+A `{ req, reply }` context, as clear-router's Fastify adapter provides, works
+the same way. With clear-router, the `clearRouterFastifyPlugin` from
+`@resora/plugin-clear-router` returns the reply for you.
+
+To keep Fastify in charge of sending, return the body instead:
+
+```ts
+fastify.get('/users/:id', async (request) => {
+  return new Resource(await findUser(request.params.id)).getBody();
 });
 ```
 

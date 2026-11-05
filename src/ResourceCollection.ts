@@ -1,6 +1,7 @@
 import type { H3Event } from 'h3'
 import {
   CollectionLike,
+  FastifyReplyLike,
   ResourceData,
   Collectible,
   CollectionBody,
@@ -51,7 +52,7 @@ export class ResourceCollection<
   public collects?: typeof Resource<T>
   protected withResponseContext?: {
     response: ServerResponse<CollectionBody<R>>
-    raw: Response | H3Event['res']
+    raw: Response | H3Event['res'] | FastifyReplyLike
   }
 
   /**
@@ -521,14 +522,15 @@ export class ResourceCollection<
    */
   response(res: H3Event['res']): ServerResponse<CollectionBody<R>>
   response(res: Response): ServerResponse<CollectionBody<R>>
+  response(res: FastifyReplyLike): ServerResponse<CollectionBody<R>>
   /**
    * Build a response object, optionally accepting a raw response to mutate in withResponse.
    * 
    * @param res Optional raw response object (e.g. Express Response or H3Event res)
    * @returns 
    */
-  response(res?: H3Event['res'] | Response): ServerResponse<CollectionBody<R>> {
-    const rawResponse = this.resolveRawResponse(res ?? this.res) as H3Event['res'] | Response
+  response(res?: H3Event['res'] | Response | FastifyReplyLike): ServerResponse<CollectionBody<R>> {
+    const rawResponse = this.resolveRawResponse(res ?? this.res) as H3Event['res'] | Response | FastifyReplyLike
 
     return this.runResponse({
       ensureJson: () => this.json(),
@@ -557,7 +559,7 @@ export class ResourceCollection<
    */
   withResponse(
     _response?: ServerResponse<CollectionBody<R>>,
-    _rawResponse?: Response | H3Event['res']
+    _rawResponse?: Response | H3Event['res'] | FastifyReplyLike
   ): any {
     return this
   }
@@ -584,7 +586,7 @@ export class ResourceCollection<
         await this.jsonAsync()
       },
       body: () => this.body,
-      rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response,
+      rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response | FastifyReplyLike,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -619,7 +621,7 @@ export class ResourceCollection<
         await this.jsonAsync()
       },
       body: () => this.body,
-      rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response,
+      rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response | FastifyReplyLike,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -651,7 +653,7 @@ export class ResourceCollection<
         await this.jsonAsync()
       },
       body: () => this.body,
-      rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response,
+      rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response | FastifyReplyLike,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {

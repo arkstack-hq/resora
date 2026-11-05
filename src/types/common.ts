@@ -46,3 +46,17 @@ export interface ResponseStructureConfig {
      */
     factory?: ResponseFactory | undefined
 }
+
+/**
+ * @description The parts of a Fastify `reply` that Resora uses to dispatch a response.
+ */
+export interface FastifyReplyLike {
+    code (statusCode: number): unknown
+    header (key: string, value: any): unknown
+    send (payload?: any): unknown
+    readonly sent: boolean
+    raw: {
+        statusMessage?: string
+        headersSent?: boolean
+    }
+}

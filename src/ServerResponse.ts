@@ -1,4 +1,4 @@
-import { Collectible, NonCollectible, ResourceData } from './types'
+import { Collectible, FastifyReplyLike, NonCollectible, ResourceData } from './types'
 
 import type { H3Event } from 'h3'
 import type { Response } from 'express'
@@ -13,7 +13,7 @@ export interface ServerResponseData<R = any> {
 
 /**
  * ServerResponse class to handle HTTP response construction and sending, compatible 
- * with both Express and H3 response objects.
+ * with Express, H3 and Fastify response objects.
  * 
  * @author Legacy (3m1n3nc3)
  * @since 0.1.0
@@ -33,8 +33,9 @@ export class ServerResponse<
 
     constructor(response: H3Event['res'], body: R)
     constructor(response: Response, body: R)
+    constructor(response: FastifyReplyLike, body: R)
     constructor(response: undefined, body: R)
-    constructor(private response: Response | H3Event['res'] | undefined, private body: R) { }
+    constructor(private response: Response | H3Event['res'] | FastifyReplyLike | undefined, private body: R) { }
 
     /**
      * Set the HTTP status code for the response
@@ -93,6 +94,8 @@ export class ServerResponse<
             return this.response.statusMessage
         } else if (this.response && 'statusText' in this.response) {
             return this.response.statusText
+        } else if (this.response && 'raw' in this.response) {
+            return this.response.raw.statusMessage
         }
 
         return undefined
