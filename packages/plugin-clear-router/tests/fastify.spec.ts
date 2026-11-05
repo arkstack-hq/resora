@@ -1,5 +1,5 @@
 import { Resource, registerPlugin, resetPluginsForTests } from '../../../src'
-import { beforeEach, describe, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import fastify, { FastifyInstance } from 'fastify'
 
 import { Router as ClearRouter } from 'clear-router/fastify'
@@ -69,5 +69,23 @@ describe('@resora/plugin-clear-router fastify', () => {
                     name: 'Grace',
                 },
             })
+    })
+
+    it('hands the sent reply back to fastify so it is not sent twice', async () => {
+        const warnings: unknown[] = []
+
+        app = fastify({ logger: { level: 'warn', stream: { write: (line: string) => warnings.push(line) } } })
+
+        ClearRouter.get('/users/3', () => {
+            return new Resource({ id: 3, name: 'Linus' })
+        })
+
+        await setup()
+
+        await request(app).get('/users/3')
+            .expect(200)
+            .expect({ data: { id: 3, name: 'Linus' } })
+
+        expect(warnings.join('')).not.toContain('FST_ERR_REP_ALREADY_SENT')
     })
 })

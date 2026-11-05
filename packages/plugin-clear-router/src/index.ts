@@ -102,7 +102,10 @@ export const clearRouterFastifyPlugin = definePlugin({
         patchRouter(ClearRouterFastify as never, runWithCtx, (ctx: any) => ({
             ...ctx,
             res: ctx.reply,
-        }))
+        }), (ctx: any, _result, resolved) => {
+            // Fastify expects the reply itself back once a handler has sent it.
+            return ctx.reply?.sent ? ctx.reply : resolved
+        })
     },
 })
 
