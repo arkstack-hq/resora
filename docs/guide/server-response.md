@@ -13,7 +13,7 @@ Binds the internal Resource instance to a framework-specific response object.
 ### Parameters
 
 - `res`
-  The framework’s native response object (e.g., H3 `res`, Express `res`) or a full context object containing `{ req, res }`.
+  The framework’s native response object (e.g., H3 `res`, Express `res`, Fastify `reply`) or a full context object containing `{ req, res }`.
 
   > For Express and other frameworks implementing the connect-style middleware, this can be skipped, in which case Resora will use the response object provided in the `Resource` or `ResourceCollection` constructor.
   >
@@ -174,12 +174,13 @@ Transport state and payload state are intentionally separated.
 
 - H3 (native Fetch-style)
 - Express
+- Fastify (`reply`, or a `{ req, reply }` context)
 - Connect-style middleware frameworks
 - Any framework exposing a mutable response object
 
 Resora does not replace the response lifecycle — it integrates into it.
 
-If you're using a framework outside H3/Express or non-Connect response styles, use the transformation-first pattern documented in [Using Resora Outside H3/Express (Non-Connect Frameworks)](./non-connect-frameworks.md).
+If you're using a framework outside H3/Express/Fastify or non-Connect response styles, use the transformation-first pattern documented in [Using Resora Outside H3/Express/Fastify (Non-Connect Frameworks)](./non-connect-frameworks.md).
 
 ## If `.response()` Is Not Used
 
