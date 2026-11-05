@@ -8,6 +8,14 @@ on:
     types: [published]
   workflow_dispatch:
     inputs:
+      package:
+        description: 'Package to publish'
+        required: true
+        type: choice
+        default: resora
+        options:
+          - resora
+          - plugin-clear-router
       version:
         description: 'Version to publish (optional)'
         required: false
@@ -43,6 +51,20 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Resolve package
+        id: pkg
+        run: |
+          case "${{ github.event.inputs.package || 'resora' }}" in
+            plugin-clear-router)
+              echo "dir=packages/plugin-clear-router" >> $GITHUB_OUTPUT
+              echo "name=@resora/plugin-clear-router" >> $GITHUB_OUTPUT
+              ;;
+            *)
+              echo "dir=." >> $GITHUB_OUTPUT
+              echo "name=resora" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
       - name: Configure Git
         run: |
           git config --global user.name "github-actions[bot]"
@@ -51,13 +73,14 @@ jobs:
       - name: Check and bump version if needed
         id: version_check
         if: ${{ github.event.inputs.version == '' }}
+        working-directory: ${{ steps.pkg.outputs.dir }}
         run: |
           # Get current version from package.json
           CURRENT_VERSION=$(node -p "require('./package.json').version")
           echo "Current package.json version: $CURRENT_VERSION"
 
           # Get published version from npm (suppress errors if package doesn't exist)
-          PUBLISHED_VERSION=$(pnpm view resora version 2>/dev/null || echo "0.0.0")
+          PUBLISHED_VERSION=$(pnpm view ${{ steps.pkg.outputs.name }} version 2>/dev/null || echo "0.0.0")
           echo "Published npm version: $PUBLISHED_VERSION"
 
           # Function to compare versions
@@ -103,32 +126,43 @@ jobs:
 
       - name: Commit and push version bump
         if: steps.version_check.outputs.version_bumped == 'true'
+        working-directory: ${{ steps.pkg.outputs.dir }}
         run: |
           git add package.json
-          git commit -m "chore: bump version to ${{ steps.version_check.outputs.new_version }} [skip ci]"
+          git commit -m "chore: bump ${{ steps.pkg.outputs.name }} to ${{ steps.version_check.outputs.new_version }} [skip ci]"
           git push origin HEAD:main
 
       - name: Set version from input
         if: ${{ github.event.inputs.version != '' }}
+        working-directory: ${{ steps.pkg.outputs.dir }}
         run: |
           echo "Setting version to ${{ github.event.inputs.version }}"
           pnpm version "${{ github.event.inputs.version }}" --no-git-tag-version
           echo "version_bumped=true" >> $GITHUB_OUTPUT
           echo "new_version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
           git add package.json
-          git commit -m "chore: set version to ${{ github.event.inputs.version }} [skip ci]"
+          git commit -m "chore: set ${{ steps.pkg.outputs.name }} version to ${{ github.event.inputs.version }} [skip ci]"
           git push origin HEAD:main
 
+      # Plugins resolve resora from the workspace, so it has to be built first.
+      - name: Build resora
+        if: steps.pkg.outputs.dir != '.'
+        run: pnpm build
+
       - name: Run linter
+        working-directory: ${{ steps.pkg.outputs.dir }}
         run: pnpm lint
 
       - name: Run tests
+        working-directory: ${{ steps.pkg.outputs.dir }}
         run: pnpm test
 
       - name: Build project
+        working-directory: ${{ steps.pkg.outputs.dir }}
         run: pnpm build
 
       - name: Publish to NPM
+        working-directory: ${{ steps.pkg.outputs.dir }}
         run: pnpm publish --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -136,5 +170,5 @@ jobs:
       - name: Create release notes
         if: steps.version_check.outputs.version_bumped == 'true'
         run: |
-          echo "Published version ${{ steps.version_check.outputs.new_version }} to npm" >> $GITHUB_STEP_SUMMARY
+          echo "Published ${{ steps.pkg.outputs.name }} ${{ steps.version_check.outputs.new_version }} to npm" >> $GITHUB_STEP_SUMMARY
           echo "Auto-bumped from published version" >> $GITHUB_STEP_SUMMARY
