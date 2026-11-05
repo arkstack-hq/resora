@@ -70,79 +70,55 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Check and bump version if needed
-        id: version_check
-        if: ${{ github.event.inputs.version == '' }}
+      - name: Resolve version
+        id: version
         working-directory: ${{ steps.pkg.outputs.dir }}
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || (github.ref_type == 'tag' && github.ref_name) || '' }}
         run: |
-          # Get current version from package.json
           CURRENT_VERSION=$(node -p "require('./package.json').version")
-          echo "Current package.json version: $CURRENT_VERSION"
-
-          # Get published version from npm (suppress errors if package doesn't exist)
           PUBLISHED_VERSION=$(pnpm view ${{ steps.pkg.outputs.name }} version 2>/dev/null || echo "0.0.0")
+          echo "package.json version: $CURRENT_VERSION"
           echo "Published npm version: $PUBLISHED_VERSION"
 
-          # Function to compare versions
-          compare_versions() {
-            if [ "$1" = "$2" ]; then
-              echo "equal"
-            else
-              # Use sort -V for version comparison
-              SORTED=$(printf "%s\n%s" "$1" "$2" | sort -V | head -n1)
-              if [ "$SORTED" = "$1" ]; then
-                echo "less"
-              else
-                echo "greater"
-              fi
-            fi
-          }
-
-          COMPARISON=$(compare_versions "$CURRENT_VERSION" "$PUBLISHED_VERSION")
-          echo "Version comparison: $COMPARISON"
-
-          if [ "$COMPARISON" = "equal" ] || [ "$COMPARISON" = "less" ]; then
-            echo "Version conflict detected. Auto-bumping version..."
-            
-            # Parse version components
-            IFS='.' read -r MAJOR MINOR PATCH <<< "$PUBLISHED_VERSION"
-            
-            # Bump patch version
-            NEW_PATCH=$((PATCH + 1))
-            NEW_VERSION="${MAJOR}.${MINOR}.${NEW_PATCH}"
-            
-            echo "New version: $NEW_VERSION"
-            
-            # Update package.json
-            pnpm version "$NEW_VERSION" --no-git-tag-version
-            
-            echo "version_bumped=true" >> $GITHUB_OUTPUT
-            echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          if [ -n "$INPUT_VERSION" ]; then
+            VERSION="${INPUT_VERSION#v}"
+            SOURCE="input"
+          elif [ -n "$RELEASE_TAG" ]; then
+            VERSION="${RELEASE_TAG#v}"
+            SOURCE="release tag $RELEASE_TAG"
           else
-            echo "Version is valid. Proceeding with current version."
-            echo "version_bumped=false" >> $GITHUB_OUTPUT
-            echo "new_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+            LATEST=$(printf "%s\n%s" "$CURRENT_VERSION" "$PUBLISHED_VERSION" | sort -V | tail -n1)
+
+            if [ "$LATEST" = "$PUBLISHED_VERSION" ]; then
+              IFS='.' read -r MAJOR MINOR PATCH <<< "$PUBLISHED_VERSION"
+              VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
+              SOURCE="patch bump from npm"
+            else
+              VERSION="$CURRENT_VERSION"
+              SOURCE="package.json"
+            fi
           fi
 
-      - name: Commit and push version bump
-        if: steps.version_check.outputs.version_bumped == 'true'
-        working-directory: ${{ steps.pkg.outputs.dir }}
-        run: |
-          git add package.json
-          git commit -m "chore: bump ${{ steps.pkg.outputs.name }} to ${{ steps.version_check.outputs.new_version }} [skip ci]"
-          git push origin HEAD:main
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::'$VERSION' is not a valid semver version"
+            exit 1
+          fi
 
-      - name: Set version from input
-        if: ${{ github.event.inputs.version != '' }}
-        working-directory: ${{ steps.pkg.outputs.dir }}
-        run: |
-          echo "Setting version to ${{ github.event.inputs.version }}"
-          pnpm version "${{ github.event.inputs.version }}" --no-git-tag-version
-          echo "version_bumped=true" >> $GITHUB_OUTPUT
-          echo "new_version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          git add package.json
-          git commit -m "chore: set ${{ steps.pkg.outputs.name }} version to ${{ github.event.inputs.version }} [skip ci]"
-          git push origin HEAD:main
+          if [ "$VERSION" = "$PUBLISHED_VERSION" ] || pnpm view "${{ steps.pkg.outputs.name }}@$VERSION" version 2>/dev/null | grep -q .; then
+            echo "::error::${{ steps.pkg.outputs.name }}@$VERSION is already on npm"
+            exit 1
+          fi
+
+          echo "Publishing $VERSION (from $SOURCE)"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "source=$SOURCE" >> $GITHUB_OUTPUT
+
+          if [ "$VERSION" != "$CURRENT_VERSION" ]; then
+            pnpm version "$VERSION" --no-git-tag-version
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
 
       # Plugins resolve resora from the workspace, so it has to be built first.
       - name: Build resora
@@ -167,8 +143,22 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Create release notes
-        if: steps.version_check.outputs.version_bumped == 'true'
+      - name: Sync version to main
+        if: steps.version.outputs.changed == 'true'
         run: |
-          echo "Published ${{ steps.pkg.outputs.name }} ${{ steps.version_check.outputs.new_version }} to npm" >> $GITHUB_STEP_SUMMARY
-          echo "Auto-bumped from published version" >> $GITHUB_STEP_SUMMARY
+          git fetch origin main
+          git checkout -B main origin/main
+
+          cd "${{ steps.pkg.outputs.dir }}"
+          pnpm version "${{ steps.version.outputs.version }}" --no-git-tag-version --allow-same-version
+
+          if git diff --quiet -- package.json; then
+            exit 0
+          fi
+
+          git add package.json
+          git commit -m "chore: bump ${{ steps.pkg.outputs.name }} to ${{ steps.version.outputs.version }} [skip ci]"
+          git push origin main
+
+      - name: Summary
+        run: echo "Published ${{ steps.pkg.outputs.name }}@${{ steps.version.outputs.version }} to npm (from ${{ steps.version.outputs.source }})" >> $GITHUB_STEP_SUMMARY
