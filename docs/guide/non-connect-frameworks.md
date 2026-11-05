@@ -85,6 +85,46 @@ fastify.get('/users/:id', async (request) => {
 });
 ```
 
+## Next.js
+
+### Pages Router API routes
+
+Resora dispatches through the API route's `res` directly:
+
+```ts
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { Resource } from 'resora';
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const user = await findUser(req.query.id);
+
+  await new Resource(user, { req, res })
+    .response()
+    .setStatusCode(200)
+    .header('X-Resource', 'user');
+}
+```
+
+Passing `{ req, res }` also gives Resora the request path for pagination links.
+
+### App Router route handlers
+
+Route handlers return a Web `Response`, so build one with `toWebResponse()`:
+
+```ts
+import { Resource } from 'resora';
+
+export async function GET(request: Request) {
+  const user = await findUser(new URL(request.url).searchParams.get('id'));
+
+  return new Resource(user)
+    .response()
+    .setStatusCode(200)
+    .header('X-Resource', 'user')
+    .toWebResponse();
+}
+```
+
 ## NestJS Example (Current Recommended Pattern)
 
 ### Return value style

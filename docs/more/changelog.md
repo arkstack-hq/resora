@@ -17,6 +17,8 @@ The format follows semantic versioning principles.
 
 - Added direct support for Arkormˣ Models and Collections across `ResourceCollection` and `GenericResource` flows.
 - Added direct support for Fastify replies in `withResponse()`, `.response()`, and `ServerResponse`, including clear-router's `{ req, reply }` context.
+- Added direct support for Next.js Pages Router API responses in `withResponse()`, `.response()`, and `ServerResponse`.
+- Added `ServerResponse.toWebResponse()` to build a JSON Web `Response`, for Next.js App Router route handlers.
 
 ### Fixed
 

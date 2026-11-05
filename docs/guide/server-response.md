@@ -13,7 +13,7 @@ Binds the internal Resource instance to a framework-specific response object.
 ### Parameters
 
 - `res`
-  The framework’s native response object (e.g., H3 `res`, Express `res`, Fastify `reply`) or a full context object containing `{ req, res }`.
+  The framework’s native response object (e.g., H3 `res`, Express `res`, Fastify `reply`, Next.js API `res`) or a full context object containing `{ req, res }`.
 
   > For Express and other frameworks implementing the connect-style middleware, this can be skipped, in which case Resora will use the response object provided in the `Resource` or `ResourceCollection` constructor.
   >
@@ -150,6 +150,21 @@ The snapshot runs `beforeSend` plugin hooks so it represents the final state an
 adapter should dispatch. It does not write to the raw response or run
 `afterSend`.
 
+## Web `Response`
+
+Handlers that return a Web `Response`, such as Next.js App Router route
+handlers, can call `toWebResponse()`:
+
+```ts
+export async function GET() {
+  return new UserResource(await findUser())
+    .response()
+    .setStatusCode(200)
+    .header('X-Resource', 'user')
+    .toWebResponse();
+}
+```
+
 ## Execution Model
 
 When `.response()` is used:
@@ -175,6 +190,8 @@ Transport state and payload state are intentionally separated.
 - H3 (native Fetch-style)
 - Express
 - Fastify (`reply`, or a `{ req, reply }` context)
+- Next.js Pages Router API routes (`res`, or a `{ req, res }` context)
+- Next.js App Router route handlers (through `toWebResponse()`)
 - Connect-style middleware frameworks
 - Any framework exposing a mutable response object
 

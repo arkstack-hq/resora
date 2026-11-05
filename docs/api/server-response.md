@@ -66,6 +66,25 @@ API without triggering Resora's automatic dispatch.
 `afterSend` hooks remain reserved for actual dispatch through `send()` or
 awaiting the `ServerResponse`.
 
+### toWebResponse()
+
+Resolves to a JSON Web `Response` built from the finalized body, status, status
+text and headers:
+
+```ts
+export async function GET() {
+  return new UserResource(await findUser())
+    .response()
+    .setStatusCode(200)
+    .toWebResponse();
+}
+```
+
+It suits handlers that return a `Response`, such as Next.js App Router route
+handlers. `Content-Type` defaults to `application/json` unless a header sets it.
+Async `data()` is resolved first, and `beforeSend` plugin hooks run as they do
+for `toResponseData()`.
+
 ## Promise Support
 
 ```ts

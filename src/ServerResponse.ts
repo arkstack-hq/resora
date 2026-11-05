@@ -1,4 +1,4 @@
-import { Collectible, FastifyReplyLike, NonCollectible, ResourceData } from './types'
+import { Collectible, FastifyReplyLike, NextApiResponseLike, NonCollectible, ResourceData } from './types'
 
 import type { H3Event } from 'h3'
 import type { Response } from 'express'
@@ -13,7 +13,7 @@ export interface ServerResponseData<R = any> {
 
 /**
  * ServerResponse class to handle HTTP response construction and sending, compatible 
- * with Express, H3 and Fastify response objects.
+ * with Express, H3, Fastify and Next.js API response objects.
  * 
  * @author Legacy (3m1n3nc3)
  * @since 0.1.0
@@ -34,8 +34,12 @@ export class ServerResponse<
     constructor(response: H3Event['res'], body: R)
     constructor(response: Response, body: R)
     constructor(response: FastifyReplyLike, body: R)
+    constructor(response: NextApiResponseLike, body: R)
     constructor(response: undefined, body: R)
-    constructor(private response: Response | H3Event['res'] | FastifyReplyLike | undefined, private body: R) { }
+    constructor(
+        private response: Response | H3Event['res'] | FastifyReplyLike | NextApiResponseLike | undefined,
+        private body: R
+    ) { }
 
     /**
      * Set the HTTP status code for the response
@@ -190,6 +194,30 @@ export class ServerResponse<
                 ...this.headers,
             },
         }
+    }
+
+    /**
+     * Build a Web `Response` from the finalized response state, for handlers that
+     * return one, such as Next.js App Router route handlers.
+     *
+     * @returns A JSON Web `Response` carrying the body, status and headers
+     */
+    async toWebResponse(): Promise<globalThis.Response> {
+        if (this.bodyResolver) {
+            const resolver = this.bodyResolver
+            this.bodyResolver = undefined
+
+            this.setBody(await resolver())
+        }
+
+        const { body, status, statusText, headers } = this.toResponseData()
+        const webHeaders = new Headers(headers)
+
+        if (!webHeaders.has('Content-Type')) {
+            webHeaders.set('Content-Type', 'application/json')
+        }
+
+        return new globalThis.Response(JSON.stringify(body), { status, statusText, headers: webHeaders })
     }
 
     /**

@@ -3,6 +3,7 @@ import {
   CollectionLike,
   Collectible,
   FastifyReplyLike,
+  NextApiResponseLike,
   GenericBody,
   MetaData,
   NonCollectible,
@@ -53,7 +54,7 @@ export class GenericResource<
   public collects?: typeof Resource<T>
   protected withResponseContext?: {
     response: ServerResponse<GenericBody<R>>
-    raw: Response | H3Event['res'] | FastifyReplyLike
+    raw: Response | H3Event['res'] | FastifyReplyLike | NextApiResponseLike
   }
 
   constructor(rsc: R, ctx?: Response | H3Event | Record<string, any>) {
@@ -475,6 +476,7 @@ export class GenericResource<
   response(res: H3Event['res']): ServerResponse<GenericBody<R>>
   response(res: Response): ServerResponse<GenericBody<R>>
   response(res: FastifyReplyLike): ServerResponse<GenericBody<R>>
+  response(res: NextApiResponseLike): ServerResponse<GenericBody<R>>
 
   /**
    * Build a response object, writing to the provided raw response if possible.
@@ -482,8 +484,8 @@ export class GenericResource<
    * @param res 
    * @returns 
    */
-  response(res?: Response | H3Event['res'] | FastifyReplyLike): ServerResponse<GenericBody<R>> {
-    const rawResponse = this.resolveRawResponse(res ?? this.res) as Response | H3Event['res'] | FastifyReplyLike
+  response(res?: Response | H3Event['res'] | FastifyReplyLike | NextApiResponseLike): ServerResponse<GenericBody<R>> {
+    const rawResponse = this.resolveRawResponse(res ?? this.res) as Response | H3Event['res'] | FastifyReplyLike | NextApiResponseLike
 
     return this.runResponse({
       ensureJson: () => this.json(),
@@ -512,7 +514,7 @@ export class GenericResource<
    */
   withResponse(
     _response?: ServerResponse<GenericBody<R>>,
-    _rawResponse?: Response | H3Event['res'] | FastifyReplyLike
+    _rawResponse?: Response | H3Event['res'] | FastifyReplyLike | NextApiResponseLike
   ): any {
     return this
   }
@@ -533,7 +535,7 @@ export class GenericResource<
         await this.jsonAsync()
       },
       body: () => this.body,
-      rawResponse: this.resolveRawResponse(this.res) as Response | H3Event['res'] | FastifyReplyLike,
+      rawResponse: this.resolveRawResponse(this.res) as Response | H3Event['res'] | FastifyReplyLike | NextApiResponseLike,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -568,7 +570,7 @@ export class GenericResource<
         await this.jsonAsync()
       },
       body: () => this.body,
-      rawResponse: this.resolveRawResponse(this.res) as Response | H3Event['res'] | FastifyReplyLike,
+      rawResponse: this.resolveRawResponse(this.res) as Response | H3Event['res'] | FastifyReplyLike | NextApiResponseLike,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -600,7 +602,7 @@ export class GenericResource<
         await this.jsonAsync()
       },
       body: () => this.body,
-      rawResponse: this.resolveRawResponse(this.res) as Response | H3Event['res'] | FastifyReplyLike,
+      rawResponse: this.resolveRawResponse(this.res) as Response | H3Event['res'] | FastifyReplyLike | NextApiResponseLike,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {

@@ -3,6 +3,7 @@ import {
   CollectionLike,
   Collectible,
   FastifyReplyLike,
+  NextApiResponseLike,
   MetaData,
   NonCollectible,
   PaginatorLike,
@@ -45,7 +46,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
   public resource: R
   protected withResponseContext?: {
     response: ServerResponse<ResourceBody<R>>
-    raw: Response | H3Event['res'] | FastifyReplyLike
+    raw: Response | H3Event['res'] | FastifyReplyLike | NextApiResponseLike
   }
 
   constructor(rsc: R, ctx?: Response | H3Event | Record<string, any>) {
@@ -370,14 +371,15 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
   response(res: H3Event['res']): ServerResponse<ResourceBody<R>>
   response(res: Response): ServerResponse<ResourceBody<R>>
   response(res: FastifyReplyLike): ServerResponse<ResourceBody<R>>
+  response(res: NextApiResponseLike): ServerResponse<ResourceBody<R>>
   /**
    * Build a response object, optionally accepting a raw response to mutate in withResponse.
    * 
    * @param res Optional raw response object (e.g. Express Response or H3Event res)
    * @returns 
    */
-  response(res?: H3Event['res'] | Response | FastifyReplyLike): ServerResponse<ResourceBody<R>> {
-    const rawResponse = this.resolveRawResponse(res ?? this.res) as H3Event['res'] | Response | FastifyReplyLike
+  response(res?: H3Event['res'] | Response | FastifyReplyLike | NextApiResponseLike): ServerResponse<ResourceBody<R>> {
+    const rawResponse = this.resolveRawResponse(res ?? this.res) as H3Event['res'] | Response | FastifyReplyLike | NextApiResponseLike
 
     return this.runResponse({
       ensureJson: () => this.json(),
@@ -406,7 +408,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
    */
   withResponse(
     _response?: ServerResponse<ResourceBody<R>>,
-    _rawResponse?: Response | H3Event['res'] | FastifyReplyLike
+    _rawResponse?: Response | H3Event['res'] | FastifyReplyLike | NextApiResponseLike
   ): any {
     return this
   }
@@ -427,7 +429,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
         await this.jsonAsync()
       },
       body: () => this.body,
-      rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response | FastifyReplyLike,
+      rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response | FastifyReplyLike | NextApiResponseLike,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -462,7 +464,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
         await this.jsonAsync()
       },
       body: () => this.body,
-      rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response | FastifyReplyLike,
+      rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response | FastifyReplyLike | NextApiResponseLike,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
@@ -494,7 +496,7 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
         await this.jsonAsync()
       },
       body: () => this.body,
-      rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response | FastifyReplyLike,
+      rawResponse: this.resolveRawResponse(this.res) as H3Event['res'] | Response | FastifyReplyLike | NextApiResponseLike,
       createServerResponse: (raw, body) => {
         const response = new ServerResponse(raw as never, body)
         this.withResponseContext = {
