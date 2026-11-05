@@ -15,11 +15,37 @@ import {
     setGlobalPaginatedMeta,
     setGlobalResponseStructure,
 } from 'src'
-import { afterEach, describe, expect, it } from 'vitest'
-import { readFile, rename, unlink, writeFile } from 'fs/promises'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { mkdtemp, rm, writeFile } from 'fs/promises'
 
-import { existsSync } from 'fs'
+import os from 'os'
 import path from 'path'
+
+/**
+ * Runs a callback with `process.cwd()` pointing at a temporary directory holding
+ * the given resora.config.cjs, so the repository root is never touched.
+ */
+const withRuntimeConfigFile = async (content: string, callback: () => unknown) => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'resora-config-'))
+    const cwd = vi.spyOn(process, 'cwd').mockReturnValue(dir)
+
+    try {
+        await writeFile(path.join(dir, 'resora.config.cjs'), content)
+        await callback()
+    } finally {
+        cwd.mockRestore()
+        await rm(dir, { recursive: true, force: true })
+    }
+}
+
+const runtimeConfigContent = `
+    module.exports = {
+        preferredCase: 'snake',
+        responseStructure: {
+            rootKey: 'payload',
+        },
+    }
+`
 
 const resetGlobalConfigState = () => {
     setGlobalCase(undefined)
@@ -308,29 +334,7 @@ describe('Configuration', () => {
     })
 
     it('loads resora.config.cjs for runtime API resources', async () => {
-        const configPath = path.resolve(process.cwd(), 'resora.config.cjs')
-        const backupPath = path.resolve(process.cwd(), 'resora.config.cjs.bkp')
-
-        const hadExisting = existsSync(configPath)
-        let originalContent = ''
-
-        if (hadExisting) {
-            originalContent = await readFile(configPath, 'utf-8')
-            await rename(configPath, backupPath)
-        }
-
-        try {
-            const configContent = `
-                module.exports = {
-                    preferredCase: 'snake',
-                    responseStructure: {
-                        rootKey: 'payload',
-                    },
-                }
-            `
-
-            await writeFile(configPath, configContent)
-
+        await withRuntimeConfigFile(runtimeConfigContent, async () => {
             resetGlobalConfigState()
             resetRuntimeConfigForTests()
             await loadRuntimeConfig()
@@ -340,43 +344,11 @@ describe('Configuration', () => {
             expect(body).toEqual({
                 payload: { first_name: 'John' },
             })
-        } finally {
-            await unlink(configPath)
-
-            if (hadExisting) {
-                if (existsSync(backupPath)) {
-                    await rename(backupPath, configPath)
-                } else {
-                    await writeFile(configPath, originalContent)
-                }
-            }
-        }
+        })
     })
 
     it('auto-loads runtime config for direct serializer usage', async () => {
-        const configPath = path.resolve(process.cwd(), 'resora.config.cjs')
-        const backupPath = path.resolve(process.cwd(), 'resora.config.cjs.bkp')
-
-        const hadExisting = existsSync(configPath)
-        let originalContent = ''
-
-        if (hadExisting) {
-            originalContent = await readFile(configPath, 'utf-8')
-            await rename(configPath, backupPath)
-        }
-
-        try {
-            const configContent = `
-                module.exports = {
-                    preferredCase: 'snake',
-                    responseStructure: {
-                        rootKey: 'payload',
-                    },
-                }
-            `
-
-            await writeFile(configPath, configContent)
-
+        await withRuntimeConfigFile(runtimeConfigContent, async () => {
             resetGlobalConfigState()
             resetRuntimeConfigForTests()
 
@@ -393,16 +365,6 @@ describe('Configuration', () => {
             expect(genericBody).toEqual({
                 payload: { first_name: 'John' },
             })
-        } finally {
-            await unlink(configPath)
-
-            if (hadExisting) {
-                if (existsSync(backupPath)) {
-                    await rename(backupPath, configPath)
-                } else {
-                    await writeFile(configPath, originalContent)
-                }
-            }
-        }
+        })
     })
 })
