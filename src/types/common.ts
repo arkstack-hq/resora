@@ -60,3 +60,25 @@ export interface FastifyReplyLike {
         headersSent?: boolean
     }
 }
+
+/**
+ * @description The parts of a Next.js Pages Router API `res` (`NextApiResponse`) that Resora uses to dispatch a response.
+ */
+export interface NextApiResponseLike {
+    status (statusCode: number): unknown
+    setHeader (name: string, value: any): unknown
+    send (body: any): void
+    statusCode: number
+    statusMessage?: string
+    headersSent: boolean
+}
+
+/**
+ * @description The parts of a NestJS `ArgumentsHost` or `ExecutionContext` that Resora uses to reach the HTTP request and response.
+ */
+export interface NestHttpHostLike {
+    switchToHttp (): {
+        getRequest<T = any> (): T
+        getResponse<T = any> (): T
+    }
+}

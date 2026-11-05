@@ -8,6 +8,7 @@ import {
 import {
     extractResponseFromCtx,
     getCtx,
+    isNestHttpHost,
     getGlobalCase,
     getGlobalResponseStructure,
     loadRuntimeConfig,
@@ -191,6 +192,10 @@ export abstract class BaseSerializer<TResource = any> {
      * @returns 
      */
     protected resolveRawResponse<TRawResponse> (response?: TRawResponse): TRawResponse | undefined {
+        if (isNestHttpHost(response)) {
+            return extractResponseFromCtx(response) as TRawResponse
+        }
+
         if (typeof response !== 'undefined') {
             return response
         }
