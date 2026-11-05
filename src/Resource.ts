@@ -3,6 +3,7 @@ import {
   CollectionLike,
   Collectible,
   FastifyReplyLike,
+  NestHttpHostLike,
   NextApiResponseLike,
   MetaData,
   NonCollectible,
@@ -372,13 +373,14 @@ export class Resource<R extends ResourceData | NonCollectible = ResourceData> ex
   response(res: Response): ServerResponse<ResourceBody<R>>
   response(res: FastifyReplyLike): ServerResponse<ResourceBody<R>>
   response(res: NextApiResponseLike): ServerResponse<ResourceBody<R>>
+  response(host: NestHttpHostLike): ServerResponse<ResourceBody<R>>
   /**
    * Build a response object, optionally accepting a raw response to mutate in withResponse.
    * 
    * @param res Optional raw response object (e.g. Express Response or H3Event res)
    * @returns 
    */
-  response(res?: H3Event['res'] | Response | FastifyReplyLike | NextApiResponseLike): ServerResponse<ResourceBody<R>> {
+  response(res?: H3Event['res'] | Response | FastifyReplyLike | NextApiResponseLike | NestHttpHostLike): ServerResponse<ResourceBody<R>> {
     const rawResponse = this.resolveRawResponse(res ?? this.res) as H3Event['res'] | Response | FastifyReplyLike | NextApiResponseLike
 
     return this.runResponse({

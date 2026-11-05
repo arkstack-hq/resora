@@ -2,6 +2,7 @@ import type { H3Event } from 'h3'
 import {
   CollectionLike,
   FastifyReplyLike,
+  NestHttpHostLike,
   NextApiResponseLike,
   ResourceData,
   Collectible,
@@ -525,13 +526,14 @@ export class ResourceCollection<
   response(res: Response): ServerResponse<CollectionBody<R>>
   response(res: FastifyReplyLike): ServerResponse<CollectionBody<R>>
   response(res: NextApiResponseLike): ServerResponse<CollectionBody<R>>
+  response(host: NestHttpHostLike): ServerResponse<CollectionBody<R>>
   /**
    * Build a response object, optionally accepting a raw response to mutate in withResponse.
    * 
    * @param res Optional raw response object (e.g. Express Response or H3Event res)
    * @returns 
    */
-  response(res?: H3Event['res'] | Response | FastifyReplyLike | NextApiResponseLike): ServerResponse<CollectionBody<R>> {
+  response(res?: H3Event['res'] | Response | FastifyReplyLike | NextApiResponseLike | NestHttpHostLike): ServerResponse<CollectionBody<R>> {
     const rawResponse = this.resolveRawResponse(res ?? this.res) as H3Event['res'] | Response | FastifyReplyLike | NextApiResponseLike
 
     return this.runResponse({

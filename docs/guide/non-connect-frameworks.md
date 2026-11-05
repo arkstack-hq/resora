@@ -125,9 +125,14 @@ export async function GET(request: Request) {
 }
 ```
 
-## NestJS Example (Current Recommended Pattern)
+## NestJS
+
+NestJS hands controllers the platform's own response: an Express `res` or a
+Fastify `reply`. Resora dispatches through either one.
 
 ### Return value style
+
+Let Nest send the response and return the transformed body:
 
 ```ts
 import { Resource } from 'resora'
@@ -144,18 +149,46 @@ async findOne(@Param('id') id: string) {
 
 ### `@Res()` style
 
+Inject the response with `@Res()` and let Resora send it:
+
 ```ts
 import { Resource } from 'resora'
 
 @Get(':id')
-async findOne(@Param('id') id: string, @Res() res: any) {
+async findOne(@Param('id') id: string, @Req() req: Request, @Res() res: Response) {
   const user = await this.usersService.findOne(id)
 
-  const body = new Resource(user).getBody()
-
-  return res.status(200).json(body)
+  await new Resource(user, { req, res })
+    .response()
+    .setStatusCode(200)
+    .header('X-Resource', 'user')
 }
 ```
+
+With the Fastify platform, pass `{ req, reply }` instead.
+
+### `ArgumentsHost` and `ExecutionContext`
+
+Interceptors, guards and exception filters receive an `ArgumentsHost` or an
+`ExecutionContext`. Resora accepts either one in place of a response or a
+`{ req, res }` context, and reads the request and response from
+`switchToHttp()`:
+
+```ts
+import { ArgumentsHost, Catch, ExceptionFilter, NotFoundException } from '@nestjs/common'
+import { GenericResource } from 'resora'
+
+@Catch(NotFoundException)
+export class NotFoundFilter implements ExceptionFilter {
+  async catch(exception: NotFoundException, host: ArgumentsHost) {
+    await new GenericResource({ message: exception.message })
+      .response(host)
+      .setStatusCode(404)
+  }
+}
+```
+
+A host can also be passed to the constructor or to `Resource.setCtx()`.
 
 ## Collections and Pagination in Non-Connect Frameworks
 

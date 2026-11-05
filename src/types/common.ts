@@ -72,3 +72,13 @@ export interface NextApiResponseLike {
     statusMessage?: string
     headersSent: boolean
 }
+
+/**
+ * @description The parts of a NestJS `ArgumentsHost` or `ExecutionContext` that Resora uses to reach the HTTP request and response.
+ */
+export interface NestHttpHostLike {
+    switchToHttp (): {
+        getRequest<T = any> (): T
+        getResponse<T = any> (): T
+    }
+}

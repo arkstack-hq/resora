@@ -1,4 +1,4 @@
-import { CaseStyle, Config, ResponseFactory, ResponseStructureConfig } from '../types'
+import { CaseStyle, Config, NestHttpHostLike, ResponseFactory, ResponseStructureConfig } from '../types'
 import { AsyncLocalStorage } from 'node:async_hooks'
 
 let globalPreferredCase: CaseStyle | undefined
@@ -314,6 +314,10 @@ export const extractRequestUrl = (ctx: unknown): string | undefined => {
         return typeof ctx === 'string' ? ctx : undefined
     }
 
+    if (isNestHttpHost(ctx)) {
+        return extractUrlFromRequest(ctx.switchToHttp().getRequest())
+    }
+
     const obj = ctx as Record<string, any>
 
     // Context with `req` property ({ req, res } from Express middleware or H3 HTTPEvent)
@@ -353,6 +357,15 @@ const extractUrlFromRequest = (req: Record<string, any>): string | undefined => 
 }
 
 /**
+ * Checks whether a value is a NestJS `ArgumentsHost` or `ExecutionContext`.
+ *
+ * @param ctx The value to check.
+ */
+export const isNestHttpHost = (ctx: unknown): ctx is NestHttpHostLike => {
+    return Boolean(ctx) && typeof (ctx as NestHttpHostLike).switchToHttp === 'function'
+}
+
+/**
  * Extracts the response object from an HTTP context.
  *
  * If the context has a `res` property (Express middleware `{ req, res }` or
@@ -365,6 +378,10 @@ const extractUrlFromRequest = (req: Record<string, any>): string | undefined => 
 export const extractResponseFromCtx = (ctx: unknown): any | undefined => {
     if (!ctx || typeof ctx !== 'object') {
         return undefined
+    }
+
+    if (isNestHttpHost(ctx)) {
+        return ctx.switchToHttp().getResponse()
     }
 
     const obj = ctx as Record<string, any>

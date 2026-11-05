@@ -3,6 +3,7 @@ import {
   CollectionLike,
   Collectible,
   FastifyReplyLike,
+  NestHttpHostLike,
   NextApiResponseLike,
   GenericBody,
   MetaData,
@@ -477,6 +478,7 @@ export class GenericResource<
   response(res: Response): ServerResponse<GenericBody<R>>
   response(res: FastifyReplyLike): ServerResponse<GenericBody<R>>
   response(res: NextApiResponseLike): ServerResponse<GenericBody<R>>
+  response(host: NestHttpHostLike): ServerResponse<GenericBody<R>>
 
   /**
    * Build a response object, writing to the provided raw response if possible.
@@ -484,7 +486,7 @@ export class GenericResource<
    * @param res 
    * @returns 
    */
-  response(res?: Response | H3Event['res'] | FastifyReplyLike | NextApiResponseLike): ServerResponse<GenericBody<R>> {
+  response(res?: Response | H3Event['res'] | FastifyReplyLike | NextApiResponseLike | NestHttpHostLike): ServerResponse<GenericBody<R>> {
     const rawResponse = this.resolveRawResponse(res ?? this.res) as Response | H3Event['res'] | FastifyReplyLike | NextApiResponseLike
 
     return this.runResponse({

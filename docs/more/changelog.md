@@ -19,6 +19,7 @@ The format follows semantic versioning principles.
 - Added direct support for Fastify replies in `withResponse()`, `.response()`, and `ServerResponse`, including clear-router's `{ req, reply }` context.
 - Added direct support for Next.js Pages Router API responses in `withResponse()`, `.response()`, and `ServerResponse`.
 - Added `ServerResponse.toWebResponse()` to build a JSON Web `Response`, for Next.js App Router route handlers.
+- Added direct support for NestJS in `withResponse()`, `.response()`, and `ServerResponse`, including an `ArgumentsHost` or `ExecutionContext` as the response or context.
 
 ### Fixed
 
@@ -34,7 +35,6 @@ The format follows semantic versioning principles.
 ### Planned
 
 - Plugin System for lifecycle extension without core modification
-- Direct support for Next.Js API and Nest.JS response objects in `withResponse()`, `.response()`, and `ServerResponse` class.
 - Built-in support for Arkormˣ models for seamless transformation of Arkormˣ entities.
 
 ## [0.2.1] - [0.2.2] - Patch Release Series

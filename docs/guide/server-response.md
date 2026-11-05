@@ -13,7 +13,7 @@ Binds the internal Resource instance to a framework-specific response object.
 ### Parameters
 
 - `res`
-  The framework’s native response object (e.g., H3 `res`, Express `res`, Fastify `reply`, Next.js API `res`) or a full context object containing `{ req, res }`.
+  The framework’s native response object (e.g., H3 `res`, Express `res`, Fastify `reply`, Next.js API `res`), a full context object containing `{ req, res }`, or a NestJS `ArgumentsHost` / `ExecutionContext`.
 
   > For Express and other frameworks implementing the connect-style middleware, this can be skipped, in which case Resora will use the response object provided in the `Resource` or `ResourceCollection` constructor.
   >
@@ -192,6 +192,7 @@ Transport state and payload state are intentionally separated.
 - Fastify (`reply`, or a `{ req, reply }` context)
 - Next.js Pages Router API routes (`res`, or a `{ req, res }` context)
 - Next.js App Router route handlers (through `toWebResponse()`)
+- NestJS (`@Res()` response, or an `ArgumentsHost` / `ExecutionContext`)
 - Connect-style middleware frameworks
 - Any framework exposing a mutable response object
 

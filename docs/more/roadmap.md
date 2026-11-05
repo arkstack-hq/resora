@@ -104,7 +104,7 @@ Add direct support for NextJs API and NestJS response objects in:
 
 This will enable first-class integration without requiring custom wrappers.
 
-🔲 Implemented
+✅ Implemented
 
 ## Built in support for Arkormˣ
 
