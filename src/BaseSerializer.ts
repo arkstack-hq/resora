@@ -331,12 +331,12 @@ export abstract class BaseSerializer<TResource = any> {
 
     /**
      * Run the thenable process for the resource, allowing for async handling and 
-     * response generation.
+     * response generation. Serialization errors are passed to onrejected.
      * 
      * @param input 
      * @returns 
      */
-    protected async runThen<TBody, TRawResponse, TServerResponse, TResult1, TResult2> (input: {
+    protected runThen<TBody, TRawResponse, TServerResponse, TResult1, TResult2> (input: {
         ensureJson: () => void | Promise<void>
         body: () => TBody
         rawResponse?: TRawResponse
@@ -345,7 +345,24 @@ export abstract class BaseSerializer<TResource = any> {
         sendRawResponse?: (raw: TRawResponse, body: TBody) => void
         onfulfilled?: ((value: TBody) => TResult1 | PromiseLike<TResult1>) | null
         onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null
-    }) {
+    }): Promise<TResult1 | TResult2> {
+        return this.dispatchThen(input).then(input.onfulfilled, input.onrejected)
+    }
+
+    /**
+     * Serialize the resource, apply response hooks and send the body.
+     * 
+     * @param input 
+     * @returns The dispatched body
+     */
+    private async dispatchThen<TBody, TRawResponse, TServerResponse> (input: {
+        ensureJson: () => void | Promise<void>
+        body: () => TBody
+        rawResponse?: TRawResponse
+        createServerResponse: (raw: TRawResponse, body: TBody) => TServerResponse
+        callWithResponse: (response?: TServerResponse, raw?: TRawResponse) => void
+        sendRawResponse?: (raw: TRawResponse, body: TBody) => void
+    }): Promise<TBody> {
         this.called.then = true
         await input.ensureJson()
 
@@ -374,15 +391,13 @@ export abstract class BaseSerializer<TResource = any> {
             response,
         })
 
-        const resolved = Promise.resolve(dispatchedBody).then(input.onfulfilled, input.onrejected)
-
         if (typeof (response as any)?.send === 'function') {
             (response as any).send(dispatchedBody)
         } else if (typeof input.rawResponse !== 'undefined' && input.sendRawResponse) {
             input.sendRawResponse(input.rawResponse, dispatchedBody)
         }
 
-        return resolved
+        return dispatchedBody
     }
 
     /**
